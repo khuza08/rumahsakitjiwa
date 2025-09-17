@@ -16,15 +16,28 @@ public class login extends JFrame {
     private Rectangle normalBounds;
     private Timer animationTimer;
     private JSplitPane splitPane;
-    private Rectangle preMinimizeBounds; // Simpan bounds sebelum minimize
-    private boolean isMaximized = false; // Track maximize state manual
+    private Rectangle preMinimizeBounds; 
+    private boolean isMaximized = false;
 
     public login() {
+        // ================= WAYLAND OPTIMIZATIONS =================
+        // Set system properties untuk Wayland compatibility
+        System.setProperty("awt.useSystemAAFontSettings", "on");
+        System.setProperty("swing.aatext", "true");
+        System.setProperty("sun.java2d.opengl", "false"); // Disable OpenGL pada Wayland
+        System.setProperty("sun.java2d.xrender", "false"); // Disable XRender
+        System.setProperty("sun.java2d.pmoffscreen", "false"); // Disable pixmap caching
+        
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
             UIManager.put("Button.arc", 20);
             UIManager.put("TextComponent.arc", 15);
             UIManager.put("Component.arc", 15);
+            
+            // Additional Wayland-friendly settings
+            UIManager.put("Component.focusWidth", 0);
+            UIManager.put("Button.focusWidth", 0);
+            UIManager.put("TextField.focusWidth", 0);
         } catch (Exception ex) {
             System.err.println("Gagal load FlatLaf");
         }
@@ -38,22 +51,27 @@ public class login extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         
-        // Buat background transparan untuk rounded effect
-        setBackground(new Color(0, 0, 0, 0));
+        // Set opaque background untuk menghindari transparency issues di Wayland
+        setBackground(Color.WHITE);
 
         // Split layout kiri-kanan langsung
         splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(250);
         splitPane.setDividerSize(0);
-        splitPane.setOpaque(false);
+        splitPane.setOpaque(true); // Set opaque untuk stability
         add(splitPane, BorderLayout.CENTER);
 
         // ================= PANEL KIRI (Logo) =================
         JPanel leftPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
+                
+                // Wayland-friendly rendering hints
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
                 
                 // Panel kiri dengan rounded di kiri atas dan kiri bawah
                 g2d.setColor(new Color(0xB6CEB4));
@@ -65,14 +83,17 @@ public class login extends JFrame {
                 g2d.dispose();
             }
         };
-        leftPanel.setOpaque(false);
+        leftPanel.setOpaque(true);
+        leftPanel.setBackground(new Color(0xB6CEB4));
 
         // Tombol macOS di panel kiri (atas kiri)
         JPanel leftTopPanel = new JPanel(new BorderLayout());
-        leftTopPanel.setOpaque(false);
+        leftTopPanel.setOpaque(true);
+        leftTopPanel.setBackground(new Color(0xB6CEB4));
         
         JPanel macOSButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 12));
-        macOSButtons.setOpaque(false);
+        macOSButtons.setOpaque(true);
+        macOSButtons.setBackground(new Color(0xB6CEB4));
         
         JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
         JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
@@ -81,7 +102,6 @@ public class login extends JFrame {
         closeBtn.addActionListener(e -> animateClose());
         minimizeBtn.addActionListener(e -> animateMinimize());
         
-        // Create final reference for maximize button
         final JButton maxBtn = maximizeBtn;
         maxBtn.addActionListener(e -> {
             if (isMaximized) {
@@ -102,6 +122,7 @@ public class login extends JFrame {
         Image img = logoIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel logo = new JLabel(new ImageIcon(img));
         logo.setHorizontalAlignment(SwingConstants.CENTER);
+        logo.setOpaque(false);
 
         leftPanel.add(leftTopPanel, BorderLayout.NORTH);
         leftPanel.add(logo, BorderLayout.CENTER);
@@ -111,8 +132,13 @@ public class login extends JFrame {
         JPanel rightPanel = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
+                
+                // Wayland-friendly rendering hints
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
                 
                 // Panel kanan dengan rounded di kanan atas dan kanan bawah
                 g2d.setColor(new Color(0x96A78D));
@@ -124,7 +150,8 @@ public class login extends JFrame {
                 g2d.dispose();
             }
         };
-        rightPanel.setOpaque(false);
+        rightPanel.setOpaque(true);
+        rightPanel.setBackground(new Color(0x96A78D));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(12, 12, 12, 12);
@@ -134,7 +161,9 @@ public class login extends JFrame {
         gbc.gridx = 0; gbc.gridy = 0;
         ImageIcon userIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/user.png"));
         Image userImg = userIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-        rightPanel.add(new JLabel(new ImageIcon(userImg)), gbc);
+        JLabel userLabel = new JLabel(new ImageIcon(userImg));
+        userLabel.setOpaque(false);
+        rightPanel.add(userLabel, gbc);
 
         usernameField = new JTextField(15);
         usernameField.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
@@ -144,7 +173,7 @@ public class login extends JFrame {
         
         // Add placeholder text
         usernameField.setText("Username");
-        usernameField.setForeground(new Color(200, 200, 200, 150)); // Placeholder color
+        usernameField.setForeground(new Color(200, 200, 200, 150)); 
         
         // Focus listeners for placeholder behavior
         usernameField.addFocusListener(new java.awt.event.FocusListener() {
@@ -165,7 +194,6 @@ public class login extends JFrame {
             }
         });
         
-        // Enter key listener - focus to password field
         usernameField.addActionListener(e -> passwordField.requestFocus());
         
         gbc.gridx = 1;
@@ -175,18 +203,20 @@ public class login extends JFrame {
         gbc.gridx = 0; gbc.gridy++;
         ImageIcon lockIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/lock.png"));
         Image lockImg = lockIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-        rightPanel.add(new JLabel(new ImageIcon(lockImg)), gbc);
+        JLabel lockLabel = new JLabel(new ImageIcon(lockImg));
+        lockLabel.setOpaque(false);
+        rightPanel.add(lockLabel, gbc);
         
         passwordField = new JPasswordField(15);
         passwordField.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
         passwordField.setOpaque(false);
         passwordField.setForeground(Color.WHITE);
         passwordField.setCaretColor(Color.WHITE);
-        passwordField.setEchoChar((char) 0); // Show placeholder text initially
+        passwordField.setEchoChar((char) 0); 
         
         // Add placeholder text
         passwordField.setText("Password");
-        passwordField.setForeground(new Color(200, 200, 200, 150)); // Placeholder color
+        passwordField.setForeground(new Color(200, 200, 200, 150)); 
         
         // Focus listeners for placeholder behavior
         passwordField.addFocusListener(new java.awt.event.FocusListener() {
@@ -195,21 +225,20 @@ public class login extends JFrame {
                 if (String.valueOf(passwordField.getPassword()).equals("Password")) {
                     passwordField.setText("");
                     passwordField.setForeground(Color.WHITE);
-                    passwordField.setEchoChar('●'); // Set password masking
+                    passwordField.setEchoChar('●'); 
                 }
             }
             
             @Override
             public void focusLost(java.awt.event.FocusEvent e) {
                 if (passwordField.getPassword().length == 0) {
-                    passwordField.setEchoChar((char) 0); // Remove masking for placeholder
+                    passwordField.setEchoChar((char) 0); 
                     passwordField.setText("Password");
                     passwordField.setForeground(new Color(200, 200, 200, 150));
                 }
             }
         });
         
-        // Enter key listener - trigger login
         passwordField.addActionListener(e -> loginButton.doClick());
         
         gbc.gridx = 1;
@@ -222,14 +251,13 @@ public class login extends JFrame {
         loginButton.setFocusPainted(false);
         loginButton.setBorderPainted(false);
         loginButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        loginButton.setOpaque(true); // Ensure button is opaque
 
         // ================= LOGIN ACTION LISTENER =================
         loginButton.addActionListener(e -> {
-            // Validasi input
             String username = usernameField.getText();
             String password = new String(passwordField.getPassword());
             
-            // Cek apakah field kosong atau masih placeholder
             if (username.equals("Username") || username.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Please enter username", "Login Error", JOptionPane.ERROR_MESSAGE);
                 usernameField.requestFocus();
@@ -242,14 +270,12 @@ public class login extends JFrame {
                 return;
             }
             
-            // Validasi credential
             if (validateCredentials(username, password)) {
-                // Login berhasil - buka main window
                 SwingUtilities.invokeLater(() -> {
                     try {
                         main mainWindow = new main();
                         mainWindow.setVisible(true);
-                        this.dispose(); // Tutup login window
+                        this.dispose(); 
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(this, 
                             "Error opening main window: " + ex.getMessage(), 
@@ -260,7 +286,6 @@ public class login extends JFrame {
                 });
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid username or password", "Login Failed", JOptionPane.ERROR_MESSAGE);
-                // Clear password field dan focus ke username
                 passwordField.setText("Password");
                 passwordField.setForeground(new Color(200, 200, 200, 150));
                 passwordField.setEchoChar((char) 0);
@@ -273,17 +298,14 @@ public class login extends JFrame {
 
         splitPane.setRightComponent(rightPanel);
 
-        // Drag functionality untuk seluruh window - bisa drag dari mana aja
-        addUniversalDragFunctionality();
+        // Drag functionality - simplified untuk Wayland
+        addSimplifiedDragFunctionality();
         
-        // Save initial bounds untuk maximize/restore
         normalBounds = getBounds();
         
-        // Add window listener untuk track perubahan bounds
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowDeiconified(java.awt.event.WindowEvent e) {
-                // Restore ke bounds sebelum minimize
                 if (preMinimizeBounds != null) {
                     setBounds(preMinimizeBounds);
                     if (splitPane != null) {
@@ -295,11 +317,9 @@ public class login extends JFrame {
             }
         });
         
-        // Component listener untuk update normalBounds saat window di-resize/drag
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
-                // Update normalBounds hanya jika tidak sedang maximize dan animasi tidak berjalan
                 if (!isMaximized && (animationTimer == null || !animationTimer.isRunning())) {
                     normalBounds = getBounds();
                 }
@@ -307,7 +327,6 @@ public class login extends JFrame {
             
             @Override
             public void componentMoved(java.awt.event.ComponentEvent e) {
-                // Update normalBounds hanya jika tidak sedang maximize dan animasi tidak berjalan
                 if (!isMaximized && (animationTimer == null || !animationTimer.isRunning())) {
                     normalBounds = getBounds();
                 }
@@ -315,53 +334,21 @@ public class login extends JFrame {
         });
     }
 
-    // ================= VALIDASI CREDENTIALS METHOD =================
     private boolean validateCredentials(String username, String password) {
-        // Implementasi validasi sederhana - sesuaikan dengan kebutuhan
-        
-        // Contoh 1: Hardcode admin/admin untuk testing
         if (username.equals("admin") && password.equals("admin")) {
             return true;
         }
         
-        // Contoh 2: Multiple users
         if ((username.equals("dokter") && password.equals("dokter123")) ||
             (username.equals("perawat") && password.equals("perawat123"))) {
             return true;
         }
         
-        // Untuk testing tanpa validasi, uncomment baris di bawah:
-        // return true;
-        
-        // Contoh 3: Database validation (implementasi sesuai kebutuhan)
-        /*
-        try {
-            // Contoh koneksi database
-            Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/rumahsakitjiwa", "root", "");
-            PreparedStatement ps = conn.prepareStatement(
-                "SELECT * FROM users WHERE username=? AND password=?");
-            ps.setString(1, username);
-            ps.setString(2, password); // Sebaiknya gunakan hash untuk password
-            ResultSet rs = ps.executeQuery();
-            boolean isValid = rs.next();
-            conn.close();
-            return isValid;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, 
-                "Database connection error: " + ex.getMessage(), 
-                "Database Error", 
-                JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        */
-        
         return false;
     }
 
-    private void addUniversalDragFunctionality() {
-        // Mouse listener untuk seluruh JFrame
+    // ================= SIMPLIFIED DRAG FOR WAYLAND =================
+    private void addSimplifiedDragFunctionality() {
         this.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 mousePoint = e.getPoint();
@@ -370,46 +357,15 @@ public class login extends JFrame {
 
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseDragged(MouseEvent e) {
-                // Disable drag jika sedang maximize
                 if (!isMaximized) {
                     Point currentPoint = e.getLocationOnScreen();
-                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                    // Simplified calculation untuk menghindari stuttering
+                    int newX = currentPoint.x - mousePoint.x;
+                    int newY = currentPoint.y - mousePoint.y;
+                    setLocation(newX, newY);
                 }
             }
         });
-
-        // Juga tambahkan ke semua komponen child agar lebih responsif
-        addDragToAllComponents(this);
-    }
-
-    private void addDragToAllComponents(Container container) {
-        for (Component comp : container.getComponents()) {
-            // Skip tombol macOS agar tetap bisa diklik
-            if (comp instanceof JButton) {
-                continue;
-            }
-            
-            comp.addMouseListener(new MouseAdapter() {
-                public void mousePressed(MouseEvent e) {
-                    mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), login.this);
-                }
-            });
-
-            comp.addMouseMotionListener(new MouseMotionAdapter() {
-                public void mouseDragged(MouseEvent e) {
-                    // Disable drag jika sedang maximize
-                    if (!isMaximized) {
-                        Point currentPoint = e.getLocationOnScreen();
-                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
-                    }
-                }
-            });
-
-            // Recursively add to child components
-            if (comp instanceof Container) {
-                addDragToAllComponents((Container) comp);
-            }
-        }
     }
 
     private JButton createMacOSButton(Color color) {
@@ -422,26 +378,24 @@ public class login extends JFrame {
                 g2d.setColor(color);
                 g2d.fillOval(0, 0, getWidth(), getHeight());
                 
-                // Add symbols on hover for better UX
+                // Simplified hover effect untuk Wayland
                 if (getModel().isRollover()) {
-                    g2d.setColor(new Color(0, 0, 0, 150));
-                    g2d.setStroke(new BasicStroke(1.2f));
+                    g2d.setColor(new Color(0, 0, 0, 100)); // Reduced opacity
+                    g2d.setStroke(new BasicStroke(1.0f));
                     
                     int centerX = getWidth() / 2;
                     int centerY = getHeight() / 2;
                     
-                    if (color.equals(new Color(0xFF5F57))) { // Close - X
+                    if (color.equals(new Color(0xFF5F57))) { // Close
                         g2d.drawLine(centerX - 3, centerY - 3, centerX + 3, centerY + 3);
                         g2d.drawLine(centerX + 3, centerY - 3, centerX - 3, centerY + 3);
-                    } else if (color.equals(new Color(0xFFBD2E))) { // Minimize - line
+                    } else if (color.equals(new Color(0xFFBD2E))) { // Minimize
                         g2d.drawLine(centerX - 3, centerY, centerX + 3, centerY);
                     } else if (color.equals(new Color(0x28CA42))) { // Maximize/Restore
                         if (isMaximized) {
-                            // Restore icon - two overlapping squares
                             g2d.drawRect(centerX - 2, centerY - 1, 3, 3);
                             g2d.drawRect(centerX - 1, centerY - 2, 3, 3);
                         } else {
-                            // Maximize icon - single square
                             g2d.drawRect(centerX - 2, centerY - 2, 4, 4);
                         }
                     }
@@ -457,57 +411,53 @@ public class login extends JFrame {
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
-        // Hover effect
+        // Simplified hover effect
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setPreferredSize(new Dimension(15, 15));
-                button.revalidate();
-                button.repaint(); // Trigger repaint to show symbol
+                button.repaint();
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setPreferredSize(new Dimension(14, 14));
-                button.revalidate();
-                button.repaint(); // Trigger repaint to hide symbol
+                button.repaint();
             }
         });
 
         return button;
     }
 
-    // ================= ANIMASI METHODS (SEPARATED FUNCTIONS) =================
+    // ================= OPTIMIZED ANIMATIONS FOR WAYLAND =================
     private void animateMinimize() {
         if (animationTimer != null && animationTimer.isRunning()) {
             animationTimer.stop();
         }
         
-        // Simpan bounds sebelum minimize
         preMinimizeBounds = getBounds();
         
         final Rectangle startBounds = getBounds();
-        
         final int[] step = {0};
-        animationTimer = new Timer(16, e -> { // 60 FPS
+        final int maxSteps = 8; // Reduced frames untuk performance
+        
+        animationTimer = new Timer(20, e -> { // Slower interval untuk stability
             step[0]++;
             
-            if (step[0] > 12) { // 12 frames = 200ms
+            if (step[0] >= maxSteps) {
                 animationTimer.stop();
                 setState(JFrame.ICONIFIED);
                 return;
             }
             
-            // Scale down to bottom left
-            float progress = step[0] / 12.0f;
+            float progress = step[0] / (float)maxSteps;
             progress = progress * progress; // Ease in
             
-            int newWidth = (int)(startBounds.width * (1 - progress * 0.9)); // Scale to 10%
-            int newHeight = (int)(startBounds.height * (1 - progress * 0.9));
-            int newX = (int)(startBounds.x + (0 - startBounds.x) * progress * 0.3); // Move towards bottom left
-            int newY = (int)(startBounds.y + (Toolkit.getDefaultToolkit().getScreenSize().height - startBounds.y) * progress * 0.3);
+            int newWidth = Math.max(50, (int)(startBounds.width * (1 - progress * 0.8))); 
+            int newHeight = Math.max(30, (int)(startBounds.height * (1 - progress * 0.8)));
+            int newX = startBounds.x + (startBounds.width - newWidth) / 2;
+            int newY = startBounds.y + (startBounds.height - newHeight) / 2;
             
             setBounds(newX, newY, newWidth, newHeight);
+            repaint(); // Explicit repaint
         });
         animationTimer.start();
     }
@@ -524,29 +474,29 @@ public class login extends JFrame {
         );
         
         final int[] step = {0};
-        animationTimer = new Timer(16, e -> { // 60 FPS
+        final int maxSteps = 10; // Reduced frames
+        
+        animationTimer = new Timer(25, e -> { // Slower for stability
             step[0]++;
             
-            if (step[0] > 20) { // 20 frames = ~333ms
+            if (step[0] >= maxSteps) {
                 animationTimer.stop();
                 dispose();
                 System.exit(0);
                 return;
             }
             
-            // Simple scale down
-            float scale = 1.0f - (step[0] / 20.0f);
-            int newWidth = (int)(startBounds.width * scale);
-            int newHeight = (int)(startBounds.height * scale);
+            float scale = 1.0f - (step[0] / (float)maxSteps);
+            int newWidth = Math.max(10, (int)(startBounds.width * scale));
+            int newHeight = Math.max(10, (int)(startBounds.height * scale));
             
-            if (newWidth > 0 && newHeight > 0) {
-                setBounds(
-                    center.x - newWidth / 2,
-                    center.y - newHeight / 2,
-                    newWidth,
-                    newHeight
-                );
-            }
+            setBounds(
+                center.x - newWidth / 2,
+                center.y - newHeight / 2,
+                newWidth,
+                newHeight
+            );
+            repaint(); // Explicit repaint
         });
         animationTimer.start();
     }
@@ -556,18 +506,18 @@ public class login extends JFrame {
             animationTimer.stop();
         }
 
-        // Simpan posisi normal sebelum maximize
         normalBounds = getBounds();
         
         final Rectangle startBounds = getBounds();
         final Rectangle targetBounds = getMaximizedScreenBounds();
 
         final int[] step = {0};
-        final int maxSteps = 15;
-        animationTimer = new Timer(16, e -> { // 60 FPS ~ 250ms
+        final int maxSteps = 10; // Reduced frames
+        
+        animationTimer = new Timer(25, e -> { // Slower interval
             step[0]++;
             float progress = step[0] / (float) maxSteps;
-            progress = 1 - (1 - progress) * (1 - progress); // ease out curve
+            progress = 1 - (1 - progress) * (1 - progress); // ease out
 
             int newX = (int)(startBounds.x + (targetBounds.x - startBounds.x) * progress);
             int newY = (int)(startBounds.y + (targetBounds.y - startBounds.y) * progress);
@@ -576,16 +526,14 @@ public class login extends JFrame {
 
             setBounds(newX, newY, newWidth, newHeight);
             updateSplitPaneDivider(newWidth);
+            repaint(); // Explicit repaint
 
             if (step[0] >= maxSteps) {
                 animationTimer.stop();
                 setBounds(targetBounds);
                 updateSplitPaneDivider(targetBounds.width);
-                
-                // Set state setelah animasi selesai
                 isMaximized = true;
                 setExtendedState(JFrame.MAXIMIZED_BOTH);
-                repaint();
             }
         });
 
@@ -597,18 +545,18 @@ public class login extends JFrame {
             animationTimer.stop();
         }
         
-        // Set state ke NORMAL dulu untuk mencegah interferensi
         setExtendedState(JFrame.NORMAL);
         
         final Rectangle startBounds = getBounds();
         final Rectangle targetBounds = normalBounds != null ? normalBounds : new Rectangle(100, 100, 650, 350);
 
         final int[] step = {0};
-        final int maxSteps = 15;
-        animationTimer = new Timer(16, e -> { // 60 FPS ~ 250ms
+        final int maxSteps = 10; // Reduced frames
+        
+        animationTimer = new Timer(25, e -> { // Slower interval
             step[0]++;
             float progress = step[0] / (float) maxSteps;
-            progress = 1 - (1 - progress) * (1 - progress); // ease out curve
+            progress = 1 - (1 - progress) * (1 - progress); // ease out
 
             int newX = (int)(startBounds.x + (targetBounds.x - startBounds.x) * progress);
             int newY = (int)(startBounds.y + (targetBounds.y - startBounds.y) * progress);
@@ -617,22 +565,19 @@ public class login extends JFrame {
 
             setBounds(newX, newY, newWidth, newHeight);
             updateSplitPaneDivider(newWidth);
+            repaint(); // Explicit repaint
 
             if (step[0] >= maxSteps) {
                 animationTimer.stop();
                 setBounds(targetBounds);
                 updateSplitPaneDivider(targetBounds.width);
-                
-                // Set state setelah animasi selesai
                 isMaximized = false;
-                repaint();
             }
         });
 
         animationTimer.start();
     }
     
-    // Helper method untuk mendapatkan bounds maksimum
     private Rectangle getMaximizedScreenBounds() {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
@@ -646,7 +591,6 @@ public class login extends JFrame {
         );
     }
     
-    // Helper method untuk update split pane divider secara proporsional
     private void updateSplitPaneDivider(int windowWidth) {
         if (splitPane != null) {
             int proportionalDivider = (int)(windowWidth * 0.385);
@@ -654,7 +598,6 @@ public class login extends JFrame {
         }
     }
     
-    // ================= MAIN METHOD (UNTUK TESTING) =================
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             new login().setVisible(true);
