@@ -80,18 +80,15 @@ public class login extends JFrame {
 
         closeBtn.addActionListener(e -> animateClose());
         minimizeBtn.addActionListener(e -> animateMinimize());
-        maximizeBtn.addActionListener(e -> animateToggleMaximize());
-
-        // Update maximize button appearance based on window state
-        final JButton maxBtnRef = maximizeBtn; // Final reference for listener
-        addWindowStateListener(e -> {
-            isMaximized = (getExtendedState() == JFrame.MAXIMIZED_BOTH);
+        
+        // Create final reference for maximize button
+        final JButton maxBtn = maximizeBtn;
+        maxBtn.addActionListener(e -> {
             if (isMaximized) {
-                maxBtnRef.setToolTipText("Restore Down");
+                animateRestore();
             } else {
-                maxBtnRef.setToolTipText("Maximize");
+                animateMaximize();
             }
-            maxBtnRef.repaint(); // Update visual
         });
 
         macOSButtons.add(closeBtn);
@@ -302,16 +299,16 @@ public class login extends JFrame {
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
-                // Update normalBounds hanya jika tidak sedang maximize
-                if (getExtendedState() != JFrame.MAXIMIZED_BOTH) {
+                // Update normalBounds hanya jika tidak sedang maximize dan animasi tidak berjalan
+                if (!isMaximized && (animationTimer == null || !animationTimer.isRunning())) {
                     normalBounds = getBounds();
                 }
             }
             
             @Override
             public void componentMoved(java.awt.event.ComponentEvent e) {
-                // Update normalBounds hanya jika tidak sedang maximize
-                if (getExtendedState() != JFrame.MAXIMIZED_BOTH) {
+                // Update normalBounds hanya jika tidak sedang maximize dan animasi tidak berjalan
+                if (!isMaximized && (animationTimer == null || !animationTimer.isRunning())) {
                     normalBounds = getBounds();
                 }
             }
@@ -373,8 +370,11 @@ public class login extends JFrame {
 
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseDragged(MouseEvent e) {
-                Point currentPoint = e.getLocationOnScreen();
-                setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                // Disable drag jika sedang maximize
+                if (!isMaximized) {
+                    Point currentPoint = e.getLocationOnScreen();
+                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                }
             }
         });
 
@@ -397,8 +397,11 @@ public class login extends JFrame {
 
             comp.addMouseMotionListener(new MouseMotionAdapter() {
                 public void mouseDragged(MouseEvent e) {
-                    Point currentPoint = e.getLocationOnScreen();
-                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                    // Disable drag jika sedang maximize
+                    if (!isMaximized) {
+                        Point currentPoint = e.getLocationOnScreen();
+                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                    }
                 }
             });
 
@@ -474,7 +477,7 @@ public class login extends JFrame {
         return button;
     }
 
-    // ================= ANIMASI METHODS (FIXED) =================
+    // ================= ANIMASI METHODS (SEPARATED FUNCTIONS) =================
     private void animateMinimize() {
         if (animationTimer != null && animationTimer.isRunning()) {
             animationTimer.stop();
@@ -483,7 +486,7 @@ public class login extends JFrame {
         // Simpan bounds sebelum minimize
         preMinimizeBounds = getBounds();
         
-        Rectangle startBounds = getBounds();
+        final Rectangle startBounds = getBounds();
         
         final int[] step = {0};
         animationTimer = new Timer(16, e -> { // 60 FPS
@@ -514,8 +517,8 @@ public class login extends JFrame {
             animationTimer.stop();
         }
         
-        Rectangle startBounds = getBounds();
-        Point center = new Point(
+        final Rectangle startBounds = getBounds();
+        final Point center = new Point(
             startBounds.x + startBounds.width / 2,
             startBounds.y + startBounds.height / 2
         );
@@ -548,72 +551,107 @@ public class login extends JFrame {
         animationTimer.start();
     }
     
-    private void animateToggleMaximize() {
+    private void animateMaximize() {
         if (animationTimer != null && animationTimer.isRunning()) {
             animationTimer.stop();
         }
+
+        // Simpan posisi normal sebelum maximize
+        normalBounds = getBounds();
         
-        Rectangle startBounds = getBounds();
-        Rectangle targetBounds;
-        
-        if (isMaximized) {
-            // Currently maximized, so RESTORE
-            targetBounds = normalBounds;
-            isMaximized = false;
-            setExtendedState(JFrame.NORMAL);
-        } else {
-            // Currently normal, so MAXIMIZE
-            normalBounds = startBounds; // Save current position
-            isMaximized = true;
-            setExtendedState(JFrame.MAXIMIZED_BOTH);
-            
-            GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
-            Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
-            
-            targetBounds = new Rectangle(
-                screenBounds.x + insets.left,
-                screenBounds.y + insets.top,
-                screenBounds.width - insets.left - insets.right,
-                screenBounds.height - insets.top - insets.bottom
-            );
-        }
-        
+        final Rectangle startBounds = getBounds();
+        final Rectangle targetBounds = getMaximizedScreenBounds();
+
         final int[] step = {0};
-        animationTimer = new Timer(16, e -> { // 60 FPS
+        final int maxSteps = 15;
+        animationTimer = new Timer(16, e -> { // 60 FPS ~ 250ms
             step[0]++;
-            
-            if (step[0] > 15) { // 15 frames = 250ms
-                animationTimer.stop();
-                setBounds(targetBounds);
-                // Update divider location
-                if (splitPane != null) {
-                    int proportionalDivider = (int)(targetBounds.width * 0.385);
-                    splitPane.setDividerLocation(proportionalDivider);
-                }
-                // Update visual immediately
-                repaint();
-                return;
-            }
-            
-            // Smooth interpolation
-            float progress = step[0] / 15.0f;
-            progress = 1 - (1 - progress) * (1 - progress); // Ease out
-            
+            float progress = step[0] / (float) maxSteps;
+            progress = 1 - (1 - progress) * (1 - progress); // ease out curve
+
             int newX = (int)(startBounds.x + (targetBounds.x - startBounds.x) * progress);
             int newY = (int)(startBounds.y + (targetBounds.y - startBounds.y) * progress);
             int newWidth = (int)(startBounds.width + (targetBounds.width - startBounds.width) * progress);
             int newHeight = (int)(startBounds.height + (targetBounds.height - startBounds.height) * progress);
-            
+
             setBounds(newX, newY, newWidth, newHeight);
-            
-            // Update divider during animation
-            if (splitPane != null) {
-                int proportionalDivider = (int)(newWidth * 0.385);
-                splitPane.setDividerLocation(proportionalDivider);
+            updateSplitPaneDivider(newWidth);
+
+            if (step[0] >= maxSteps) {
+                animationTimer.stop();
+                setBounds(targetBounds);
+                updateSplitPaneDivider(targetBounds.width);
+                
+                // Set state setelah animasi selesai
+                isMaximized = true;
+                setExtendedState(JFrame.MAXIMIZED_BOTH);
+                repaint();
             }
         });
+
         animationTimer.start();
+    }
+    
+    private void animateRestore() {
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop();
+        }
+        
+        // Set state ke NORMAL dulu untuk mencegah interferensi
+        setExtendedState(JFrame.NORMAL);
+        
+        final Rectangle startBounds = getBounds();
+        final Rectangle targetBounds = normalBounds != null ? normalBounds : new Rectangle(100, 100, 650, 350);
+
+        final int[] step = {0};
+        final int maxSteps = 15;
+        animationTimer = new Timer(16, e -> { // 60 FPS ~ 250ms
+            step[0]++;
+            float progress = step[0] / (float) maxSteps;
+            progress = 1 - (1 - progress) * (1 - progress); // ease out curve
+
+            int newX = (int)(startBounds.x + (targetBounds.x - startBounds.x) * progress);
+            int newY = (int)(startBounds.y + (targetBounds.y - startBounds.y) * progress);
+            int newWidth = (int)(startBounds.width + (targetBounds.width - startBounds.width) * progress);
+            int newHeight = (int)(startBounds.height + (targetBounds.height - startBounds.height) * progress);
+
+            setBounds(newX, newY, newWidth, newHeight);
+            updateSplitPaneDivider(newWidth);
+
+            if (step[0] >= maxSteps) {
+                animationTimer.stop();
+                setBounds(targetBounds);
+                updateSplitPaneDivider(targetBounds.width);
+                
+                // Set state setelah animasi selesai
+                isMaximized = false;
+                repaint();
+            }
+        });
+
+        animationTimer.start();
+    }
+    
+    // Helper method untuk mendapatkan bounds maksimum
+    private Rectangle getMaximizedScreenBounds() {
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
+        Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
+        
+        return new Rectangle(
+            screenBounds.x + insets.left,
+            screenBounds.y + insets.top,
+            screenBounds.width - insets.left - insets.right,
+            screenBounds.height - insets.top - insets.bottom
+        );
+    }
+    
+    // Helper method untuk update split pane divider secara proporsional
+    private void updateSplitPaneDivider(int windowWidth) {
+        if (splitPane != null) {
+            int proportionalDivider = (int)(windowWidth * 0.385);
+            splitPane.setDividerLocation(proportionalDivider);
+        }
     }
     
     // ================= MAIN METHOD (UNTUK TESTING) =================
