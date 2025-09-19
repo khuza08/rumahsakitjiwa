@@ -162,14 +162,21 @@ public class main extends JFrame {
         sidebarPanel.setOpaque(false);
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
         
-        // Menu items
-        String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Kamar", "Jadwal", "Laporan", "Pengaturan"};
+        // Menu items - tambahkan KAMAR
+        String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Data Kamar", "Jadwal", "Laporan", "Pengaturan"};
         String[] menuKeys = {"DASHBOARD", "PASIEN", "DOKTER", "KAMAR", "JADWAL", "LAPORAN", "PENGATURAN"};
         
         for (int i = 0; i < menuItems.length; i++) {
             final String menuKey = menuKeys[i];
             JButton menuBtn = createMenuButton(menuItems[i]);
-            menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
+            menuBtn.addActionListener(e -> {
+                if (menuKey.equals("KAMAR")) {
+                    // Buka form CRUD Kamar
+                    openRoomManagement();
+                } else {
+                    cardLayout.show(contentPanel, menuKey);
+                }
+            });
             sidebarPanel.add(menuBtn);
             sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         }
@@ -222,9 +229,9 @@ public class main extends JFrame {
         panel.add(createStatCard("Total Pasien", "150", new Color(0x4CAF50)));
         panel.add(createStatCard("Pasien Hari Ini", "12", new Color(0x2196F3)));
         panel.add(createStatCard("Dokter Aktif", "8", new Color(0xFF9800)));
-        panel.add(createStatCard("Kamar Tersedia", "25", new Color(0x9C27B0)));
+        panel.add(createStatCard("Total Kamar", "50", new Color(0x9C27B0)));
+        panel.add(createStatCard("Kamar Tersedia", "25", new Color(0x00BCD4)));
         panel.add(createStatCard("Jadwal Hari Ini", "18", new Color(0xF44336)));
-        panel.add(createStatCard("Laporan Bulan Ini", "45", new Color(0x795548)));
         
         return panel;
     }
@@ -271,9 +278,16 @@ public class main extends JFrame {
             "spesialisasi, dan informasi kontak dokter.");
     }
     
-        private JPanel createRoomPanel() {
-        return createContentPanel("Kamar",
-                "Room adalah Kamar.");
+    private JPanel createRoomPanel() {
+        return createContentPanel("Data Kamar", 
+            "Di sini akan ditampilkan daftar kamar, status kamar,\n" +
+            "tipe kamar, dan pengelolaan ketersediaan kamar.");
+    }
+    
+    private void openRoomManagement() {
+        SwingUtilities.invokeLater(() -> {
+            new RoomCRUD().setVisible(true);
+        });
     }
     
     private JPanel createAppointmentPanel() {
