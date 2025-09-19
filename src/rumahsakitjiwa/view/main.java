@@ -75,7 +75,7 @@ public class main extends JFrame {
         contentPanel.add(createDashboardPanel(), "DASHBOARD");
         contentPanel.add(createPatientPanel(), "PASIEN");
         contentPanel.add(createDoctorPanel(), "DOKTER");
-        contentPanel.add(createRoomPanel(), "KAMAR");
+        contentPanel.add(new RoomCRUDPanel(), "KAMAR");
         contentPanel.add(createAppointmentPanel(), "JADWAL");
         contentPanel.add(createReportPanel(), "LAPORAN");
         contentPanel.add(createSettingsPanel(), "PENGATURAN");
@@ -169,14 +169,7 @@ public class main extends JFrame {
         for (int i = 0; i < menuItems.length; i++) {
             final String menuKey = menuKeys[i];
             JButton menuBtn = createMenuButton(menuItems[i]);
-            menuBtn.addActionListener(e -> {
-                if (menuKey.equals("KAMAR")) {
-                    // Buka form CRUD Kamar
-                    openRoomManagement();
-                } else {
-                    cardLayout.show(contentPanel, menuKey);
-                }
-            });
+            menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
             sidebarPanel.add(menuBtn);
             sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         }
@@ -276,18 +269,6 @@ public class main extends JFrame {
         return createContentPanel("Data Dokter", 
             "Di sini akan ditampilkan daftar dokter, jadwal praktek,\n" +
             "spesialisasi, dan informasi kontak dokter.");
-    }
-    
-    private JPanel createRoomPanel() {
-        return createContentPanel("Data Kamar", 
-            "Di sini akan ditampilkan daftar kamar, status kamar,\n" +
-            "tipe kamar, dan pengelolaan ketersediaan kamar.");
-    }
-    
-    private void openRoomManagement() {
-        SwingUtilities.invokeLater(() -> {
-            new RoomCRUD().setVisible(true);
-        });
     }
     
     private JPanel createAppointmentPanel() {

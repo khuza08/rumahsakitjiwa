@@ -3,17 +3,14 @@ package rumahsakitjiwa.view;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.sql.*;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Room;
 
-public class RoomCRUD extends JFrame {
-    private Point mousePoint;
+public class RoomCRUDPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable roomTable;
     private JTextField txtRoomNumber, txtRoomType, txtPrice;
@@ -22,75 +19,16 @@ public class RoomCRUD extends JFrame {
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedRoomId = -1;
 
-    public RoomCRUD() {
-        try {
-            UIManager.setLookAndFeel(new FlatLightLaf());
-        } catch (Exception ex) {
-            System.err.println("Gagal load FlatLaf");
-        }
-
+    public RoomCRUDPanel() {
         initComponents();
         setupTable();
         loadRoomData();
-        addDragFunctionality();
     }
 
     private void initComponents() {
-        setTitle("Manajemen Data Kamar");
-        setUndecorated(true);
-        setSize(1000, 700);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-
-        // Main Panel dengan rounded corner
-        JPanel mainPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(0x96A78D));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                g2d.dispose();
-            }
-        };
-        mainPanel.setOpaque(false);
-
-        // Header Panel
-        JPanel headerPanel = createHeaderPanel();
-
-        // Content Panel
-        JPanel contentPanel = createContentPanel();
-
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(contentPanel, BorderLayout.CENTER);
-
-        add(mainPanel, BorderLayout.CENTER);
-    }
-
-    private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setOpaque(false);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 15, 10, 15));
-
-        // Close button
-        JButton closeBtn = createCloseButton();
-        closeBtn.addActionListener(e -> dispose());
-
-        JLabel titleLabel = new JLabel("Manajemen Data Kamar", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(Color.WHITE);
-
-        headerPanel.add(closeBtn, BorderLayout.WEST);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-
-        return headerPanel;
-    }
-
-    private JPanel createContentPanel() {
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        contentPanel.setOpaque(false);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout(10, 10));
+        setOpaque(false);
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Form Panel (Kiri)
         JPanel formPanel = createFormPanel();
@@ -98,10 +36,8 @@ public class RoomCRUD extends JFrame {
         // Table Panel (Kanan)
         JPanel tablePanel = createTablePanel();
 
-        contentPanel.add(formPanel, BorderLayout.WEST);
-        contentPanel.add(tablePanel, BorderLayout.CENTER);
-
-        return contentPanel;
+        add(formPanel, BorderLayout.WEST);
+        add(tablePanel, BorderLayout.CENTER);
     }
 
     private JPanel createFormPanel() {
@@ -296,35 +232,6 @@ public class RoomCRUD extends JFrame {
         button.setFont(new Font("Segoe UI", Font.BOLD, 11));
         
         return button;
-    }
-
-    private JButton createCloseButton() {
-        JButton closeBtn = new JButton() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(0xFF5F57));
-                g2d.fillOval(0, 0, getWidth(), getHeight());
-                
-                if (getModel().isRollover()) {
-                    g2d.setColor(new Color(0, 0, 0, 150));
-                    g2d.setStroke(new BasicStroke(1.5f));
-                    int centerX = getWidth() / 2;
-                    int centerY = getHeight() / 2;
-                    g2d.drawLine(centerX - 3, centerY - 3, centerX + 3, centerY + 3);
-                    g2d.drawLine(centerX + 3, centerY - 3, centerX - 3, centerY + 3);
-                }
-                g2d.dispose();
-            }
-        };
-        closeBtn.setPreferredSize(new Dimension(20, 20));
-        closeBtn.setContentAreaFilled(false);
-        closeBtn.setBorderPainted(false);
-        closeBtn.setFocusPainted(false);
-        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
-        return closeBtn;
     }
 
     private void addRoom() {
@@ -524,19 +431,5 @@ public class RoomCRUD extends JFrame {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
-    }
-
-    private void addDragFunctionality() {
-        this.addMouseListener(new MouseAdapter() {
-            public void mousePressed(MouseEvent e) {
-                mousePoint = e.getPoint();
-            }
-        });
-        this.addMouseMotionListener(new MouseMotionAdapter() {
-            public void mouseDragged(MouseEvent e) {
-                Point currentPoint = e.getLocationOnScreen();
-                setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
-            }
-        });
     }
 }
