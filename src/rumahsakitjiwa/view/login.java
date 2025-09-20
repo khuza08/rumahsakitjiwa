@@ -98,7 +98,7 @@ public class login extends JFrame {
         leftTopPanel.add(macOSButtons, BorderLayout.WEST);
 
         // Load logo
-        ImageIcon logoIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/monologo.png"));
+        ImageIcon logoIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/medicare.png"));
         Image img = logoIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel logo = new JLabel(new ImageIcon(img));
         logo.setHorizontalAlignment(SwingConstants.CENTER);
