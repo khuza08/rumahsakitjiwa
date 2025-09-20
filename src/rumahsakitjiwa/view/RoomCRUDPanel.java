@@ -66,7 +66,7 @@ public class RoomCRUDPanel extends JPanel {
         // Title
         JLabel titleLabel = new JLabel("Form Data Kamar");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        titleLabel.setForeground(new Color(0x2E7D32));
+        titleLabel.setForeground(new Color(0x6da395));
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         formPanel.add(titleLabel, gbc);
 
@@ -146,7 +146,7 @@ public class RoomCRUDPanel extends JPanel {
         tablePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JLabel tableTitle = new JLabel("Daftar Kamar");
         tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        tableTitle.setForeground(new Color(0x2E7D32));
+        tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
         // Setup table
@@ -173,7 +173,7 @@ public class RoomCRUDPanel extends JPanel {
         roomTable.setRowHeight(25);
         roomTable.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         roomTable.setGridColor(new Color(200, 200, 200));
-        roomTable.setSelectionBackground(new Color(0xE8F5E8));
+        roomTable.setSelectionBackground(new Color(0x6da395));
         JScrollPane scrollPane = new JScrollPane(roomTable);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
