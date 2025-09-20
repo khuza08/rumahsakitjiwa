@@ -1,5 +1,4 @@
 package rumahsakitjiwa.view;
-
 import javax.swing.*;
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.*;
@@ -8,13 +7,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 public class main extends JFrame {
     private Point mousePoint;
     private boolean isMaximized = false;
     private Rectangle normalBounds;
-    private Timer animationTimer;
-    private int animationStep;
     private JLabel timeLabel;
     private JLabel dateLabel;
     private Timer clockTimer;
@@ -46,6 +42,47 @@ public class main extends JFrame {
         normalBounds = getBounds();
     }
     
+        private void addUniversalDragFunctionality() {
+        this.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                mousePoint = e.getPoint();
+            }
+        });
+        this.addMouseMotionListener(new MouseMotionAdapter() {
+            public void mouseDragged(MouseEvent e) {
+                if (!isMaximized) {
+                    Point currentPoint = e.getLocationOnScreen();
+                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                }
+            }
+        });
+        addDragToAllComponents(this);
+    }
+
+    private void addDragToAllComponents(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JButton) {
+                continue;
+            }
+            comp.addMouseListener(new MouseAdapter() {
+                public void mousePressed(MouseEvent e) {
+                    mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), main.this);
+                }
+            });
+            comp.addMouseMotionListener(new MouseMotionAdapter() {
+                public void mouseDragged(MouseEvent e) {
+                    if (!isMaximized) {
+                        Point currentPoint = e.getLocationOnScreen();
+                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                    }
+                }
+            });
+            if (comp instanceof Container) {
+                addDragToAllComponents((Container) comp);
+            }
+        }
+    }
+
     private void initializeComponents() {
         // Panel utama dengan rounded corner
         JPanel mainPanel = new JPanel(new BorderLayout()) {
@@ -105,13 +142,29 @@ public class main extends JFrame {
         JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
         JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
         
-        closeBtn.addActionListener(e -> animateClose());
+        closeBtn.addActionListener(e -> {
+            if (clockTimer != null) {
+                clockTimer.stop();
+            }
+            dispose();
+            System.exit(0);
+        });
         minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
         maximizeBtn.addActionListener(e -> {
             if (isMaximized) {
-                animateRestore();
+                // Restore langsung tanpa animasi
+                setBounds(normalBounds);
+                isMaximized = false;
+                setExtendedState(JFrame.NORMAL);
+                repaint();
             } else {
-                animateMaximize();
+                // Maximize langsung tanpa animasi
+                normalBounds = getBounds();
+                Rectangle targetBounds = getMaximizedScreenBounds();
+                setBounds(targetBounds);
+                isMaximized = true;
+                setExtendedState(JFrame.MAXIMIZED_BOTH);
+                repaint();
             }
         });
         
@@ -346,7 +399,6 @@ public class main extends JFrame {
         }
     }
     
-    // Methods untuk macOS buttons dan animasi (sama seperti sebelumnya)
     private JButton createMacOSButton(Color color) {
         JButton button = new JButton() {
             @Override
@@ -400,137 +452,16 @@ public class main extends JFrame {
         return button;
     }
     
-    private void animateClose() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-        if (clockTimer != null) {
-            clockTimer.stop();
-        }
-        final Rectangle startBounds = getBounds();
-        final Point center = new Point(startBounds.x + startBounds.width / 2, startBounds.y + startBounds.height / 2);
-        animationStep = 0;
-        animationTimer = new Timer(16, e -> {
-            animationStep++;
-            if (animationStep > 20) {
-                animationTimer.stop();
-                dispose();
-                System.exit(0);
-                return;
-            }
-            float scale = 1.0f - (animationStep / 20.0f);
-            int newWidth = (int) (startBounds.width * scale);
-            int newHeight = (int) (startBounds.height * scale);
-            if (newWidth > 0 && newHeight > 0) {
-                setBounds(center.x - newWidth / 2, center.y - newHeight / 2, newWidth, newHeight);
-            }
-        });
-        animationTimer.start();
-    }
-    
-    private void animateMaximize() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-        normalBounds = getBounds();
+    private Rectangle getMaximizedScreenBounds() {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
         Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
-        final Rectangle finalTargetBounds = new Rectangle(
-                screenBounds.x + insets.left,
-                screenBounds.y + insets.top,
-                screenBounds.width - insets.left - insets.right,
-                screenBounds.height - insets.top - insets.bottom);
-        final Rectangle startBounds = getBounds();
-        animationStep = 0;
-        final int maxSteps = 15;
-        animationTimer = new Timer(16, e -> {
-            animationStep++;
-            float progress = animationStep / (float) maxSteps;
-            progress = 1 - (1 - progress) * (1 - progress);
-            int newX = (int) (startBounds.x + (finalTargetBounds.x - startBounds.x) * progress);
-            int newY = (int) (startBounds.y + (finalTargetBounds.y - startBounds.y) * progress);
-            int newWidth = (int) (startBounds.width + (finalTargetBounds.width - startBounds.width) * progress);
-            int newHeight = (int) (startBounds.height + (finalTargetBounds.height - startBounds.height) * progress);
-            setBounds(newX, newY, newWidth, newHeight);
-            if (animationStep >= maxSteps) {
-                animationTimer.stop();
-                setBounds(finalTargetBounds);
-                isMaximized = true;
-                setExtendedState(JFrame.MAXIMIZED_BOTH);
-                repaint();
-            }
-        });
-        animationTimer.start();
-    }
-    
-    private void animateRestore() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-        setExtendedState(JFrame.NORMAL);
-        final Rectangle startBounds = getBounds();
-        final Rectangle targetBounds = normalBounds != null ? normalBounds : new Rectangle(100, 100, 1200, 800);
-        animationStep = 0;
-        final int maxSteps = 15;
-        animationTimer = new Timer(16, e -> {
-            animationStep++;
-            float progress = animationStep / (float) maxSteps;
-            progress = 1 - (1 - progress) * (1 - progress);
-            int newX = (int) (startBounds.x + (targetBounds.x - startBounds.x) * progress);
-            int newY = (int) (startBounds.y + (targetBounds.y - startBounds.y) * progress);
-            int newWidth = (int) (startBounds.width + (targetBounds.width - startBounds.width) * progress);
-            int newHeight = (int) (startBounds.height + (targetBounds.height - startBounds.height) * progress);
-            setBounds(newX, newY, newWidth, newHeight);
-            if (animationStep >= maxSteps) {
-                animationTimer.stop();
-                setBounds(targetBounds);
-                isMaximized = false;
-                repaint();
-            }
-        });
-        animationTimer.start();
-    }
-    
-    private void addUniversalDragFunctionality() {
-        this.addMouseListener(new MouseAdapter() {
-            public void mousePressed(MouseEvent e) {
-                mousePoint = e.getPoint();
-            }
-        });
-        this.addMouseMotionListener(new MouseMotionAdapter() {
-            public void mouseDragged(MouseEvent e) {
-                if (!isMaximized) {
-                    Point currentPoint = e.getLocationOnScreen();
-                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
-                }
-            }
-        });
-        addDragToAllComponents(this);
-    }
-    
-    private void addDragToAllComponents(Container container) {
-        for (Component comp : container.getComponents()) {
-            if (comp instanceof JButton) {
-                continue;
-            }
-            comp.addMouseListener(new MouseAdapter() {
-                public void mousePressed(MouseEvent e) {
-                    mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), main.this);
-                }
-            });
-            comp.addMouseMotionListener(new MouseMotionAdapter() {
-                public void mouseDragged(MouseEvent e) {
-                    if (!isMaximized) {
-                        Point currentPoint = e.getLocationOnScreen();
-                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
-                    }
-                }
-            });
-            if (comp instanceof Container) {
-                addDragToAllComponents((Container) comp);
-            }
-        }
+        return new Rectangle(
+            screenBounds.x + insets.left,
+            screenBounds.y + insets.top,
+            screenBounds.width - insets.left - insets.right,
+            screenBounds.height - insets.top - insets.bottom
+        );
     }
     
     public static void main(String[] args) {

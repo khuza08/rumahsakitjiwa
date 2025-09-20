@@ -1,5 +1,4 @@
 package rumahsakitjiwa.view;
-
 import javax.swing.*;
 import com.formdev.flatlaf.FlatLightLaf;
 import rumahsakitjiwa.view.main; // Import main class
@@ -7,18 +6,15 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-
 public class login extends JFrame {
     public JTextField usernameField;
     public JPasswordField passwordField;
     public JButton loginButton;
     private Point mousePoint;
     private Rectangle normalBounds;
-    private Timer animationTimer;
     private JSplitPane splitPane;
     private Rectangle preMinimizeBounds; // Simpan bounds sebelum minimize
     private boolean isMaximized = false; // Track maximize state manual
-
     public login() {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
@@ -28,7 +24,6 @@ public class login extends JFrame {
         } catch (Exception ex) {
             System.err.println("Gagal load FlatLaf");
         }
-
         // Hapus title bar
         setUndecorated(true);
         
@@ -40,14 +35,12 @@ public class login extends JFrame {
         
         // Buat background transparan untuk rounded effect
         setBackground(new Color(0, 0, 0, 0));
-
         // Split layout kiri-kanan langsung
         splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(250);
         splitPane.setDividerSize(0);
         splitPane.setOpaque(false);
         add(splitPane, BorderLayout.CENTER);
-
         // ================= PANEL KIRI (Logo) =================
         JPanel leftPanel = new JPanel(new BorderLayout()) {
             @Override
@@ -66,7 +59,6 @@ public class login extends JFrame {
             }
         };
         leftPanel.setOpaque(false);
-
         // Tombol macOS di panel kiri (atas kiri)
         JPanel leftTopPanel = new JPanel(new BorderLayout());
         leftTopPanel.setOpaque(false);
@@ -77,36 +69,47 @@ public class login extends JFrame {
         JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
         JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
         JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
-
-        closeBtn.addActionListener(e -> animateClose());
-        minimizeBtn.addActionListener(e -> animateMinimize());
+        closeBtn.addActionListener(e -> {
+            // Langsung dispose dan exit tanpa animasi
+            dispose();
+            System.exit(0);
+        });
+        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
         
         // Create final reference for maximize button
         final JButton maxBtn = maximizeBtn;
         maxBtn.addActionListener(e -> {
             if (isMaximized) {
-                animateRestore();
+                // Langsung restore tanpa animasi
+                setBounds(normalBounds);
+                updateSplitPaneDivider(normalBounds.width);
+                isMaximized = false;
+                setExtendedState(JFrame.NORMAL);
+                repaint();
             } else {
-                animateMaximize();
+                // Langsung maximize tanpa animasi
+                normalBounds = getBounds();
+                Rectangle targetBounds = getMaximizedScreenBounds();
+                setBounds(targetBounds);
+                updateSplitPaneDivider(targetBounds.width);
+                isMaximized = true;
+                setExtendedState(JFrame.MAXIMIZED_BOTH);
+                repaint();
             }
         });
-
         macOSButtons.add(closeBtn);
         macOSButtons.add(minimizeBtn);
         macOSButtons.add(maximizeBtn);
         
         leftTopPanel.add(macOSButtons, BorderLayout.WEST);
-
         // Load logo
         ImageIcon logoIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/medicare.png"));
         Image img = logoIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel logo = new JLabel(new ImageIcon(img));
         logo.setHorizontalAlignment(SwingConstants.CENTER);
-
         leftPanel.add(leftTopPanel, BorderLayout.NORTH);
         leftPanel.add(logo, BorderLayout.CENTER);
         splitPane.setLeftComponent(leftPanel);
-
         // ================= PANEL KANAN (Form) =================
         JPanel rightPanel = new JPanel(new GridBagLayout()) {
             @Override
@@ -125,17 +128,14 @@ public class login extends JFrame {
             }
         };
         rightPanel.setOpaque(false);
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(12, 12, 12, 12);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
         // Username
         gbc.gridx = 0; gbc.gridy = 0;
         ImageIcon userIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/user.png"));
         Image userImg = userIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
         rightPanel.add(new JLabel(new ImageIcon(userImg)), gbc);
-
         usernameField = new JTextField(15);
         usernameField.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
         usernameField.setOpaque(false);
@@ -170,7 +170,6 @@ public class login extends JFrame {
         
         gbc.gridx = 1;
         rightPanel.add(usernameField, gbc);
-
         // Password
         gbc.gridx = 0; gbc.gridy++;
         ImageIcon lockIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/lock.png"));
@@ -214,7 +213,6 @@ public class login extends JFrame {
         
         gbc.gridx = 1;
         rightPanel.add(passwordField, gbc);
-
         // Tombol Login
         loginButton = new JButton("Login");
         loginButton.setBackground(new Color(0xD9E9CF));
@@ -222,7 +220,6 @@ public class login extends JFrame {
         loginButton.setFocusPainted(false);
         loginButton.setBorderPainted(false);
         loginButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-
         // ================= LOGIN ACTION LISTENER =================
         loginButton.addActionListener(e -> {
             // Validasi input
@@ -267,12 +264,9 @@ public class login extends JFrame {
                 usernameField.requestFocus();
             }
         });
-
         gbc.gridx = 0; gbc.gridy++; gbc.gridwidth = 2;
         rightPanel.add(loginButton, gbc);
-
         splitPane.setRightComponent(rightPanel);
-
         // Drag functionality untuk seluruh window - bisa drag dari mana aja
         addUniversalDragFunctionality();
         
@@ -299,22 +293,21 @@ public class login extends JFrame {
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
-                // Update normalBounds hanya jika tidak sedang maximize dan animasi tidak berjalan
-                if (!isMaximized && (animationTimer == null || !animationTimer.isRunning())) {
+                // Update normalBounds hanya jika tidak sedang maximize 
+                if (!isMaximized) {
                     normalBounds = getBounds();
                 }
             }
             
             @Override
             public void componentMoved(java.awt.event.ComponentEvent e) {
-                // Update normalBounds hanya jika tidak sedang maximize dan animasi tidak berjalan
-                if (!isMaximized && (animationTimer == null || !animationTimer.isRunning())) {
+                // Update normalBounds hanya jika tidak sedang maximize
+                if (!isMaximized) {
                     normalBounds = getBounds();
                 }
             }
         });
     }
-
     // ================= VALIDASI CREDENTIALS METHOD =================
     private boolean validateCredentials(String username, String password) {
         // Implementasi validasi sederhana - sesuaikan dengan kebutuhan
@@ -330,36 +323,8 @@ public class login extends JFrame {
             return true;
         }
         
-        // Untuk testing tanpa validasi, uncomment baris di bawah:
-        // return true;
-        
-        // Contoh 3: Database validation (implementasi sesuai kebutuhan)
-        /*
-        try {
-            // Contoh koneksi database
-            Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/rumahsakitjiwa", "root", "");
-            PreparedStatement ps = conn.prepareStatement(
-                "SELECT * FROM users WHERE username=? AND password=?");
-            ps.setString(1, username);
-            ps.setString(2, password); // Sebaiknya gunakan hash untuk password
-            ResultSet rs = ps.executeQuery();
-            boolean isValid = rs.next();
-            conn.close();
-            return isValid;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, 
-                "Database connection error: " + ex.getMessage(), 
-                "Database Error", 
-                JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        */
-        
         return false;
     }
-
     private void addUniversalDragFunctionality() {
         // Mouse listener untuk seluruh JFrame
         this.addMouseListener(new MouseAdapter() {
@@ -367,7 +332,6 @@ public class login extends JFrame {
                 mousePoint = e.getPoint();
             }
         });
-
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseDragged(MouseEvent e) {
                 // Disable drag jika sedang maximize
@@ -377,24 +341,20 @@ public class login extends JFrame {
                 }
             }
         });
-
         // Juga tambahkan ke semua komponen child agar lebih responsif
         addDragToAllComponents(this);
     }
-
     private void addDragToAllComponents(Container container) {
         for (Component comp : container.getComponents()) {
             // Skip tombol macOS agar tetap bisa diklik
             if (comp instanceof JButton) {
                 continue;
             }
-            
             comp.addMouseListener(new MouseAdapter() {
                 public void mousePressed(MouseEvent e) {
                     mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), login.this);
                 }
             });
-
             comp.addMouseMotionListener(new MouseMotionAdapter() {
                 public void mouseDragged(MouseEvent e) {
                     // Disable drag jika sedang maximize
@@ -404,14 +364,12 @@ public class login extends JFrame {
                     }
                 }
             });
-
             // Recursively add to child components
             if (comp instanceof Container) {
                 addDragToAllComponents((Container) comp);
             }
         }
     }
-
     private JButton createMacOSButton(Color color) {
         JButton button = new JButton() {
             @Override
@@ -465,7 +423,6 @@ public class login extends JFrame {
                 button.revalidate();
                 button.repaint(); // Trigger repaint to show symbol
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
                 button.setPreferredSize(new Dimension(14, 14));
@@ -473,165 +430,8 @@ public class login extends JFrame {
                 button.repaint(); // Trigger repaint to hide symbol
             }
         });
-
         return button;
     }
-
-    // ================= ANIMASI METHODS (SEPARATED FUNCTIONS) =================
-    private void animateMinimize() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-        
-        // Simpan bounds sebelum minimize
-        preMinimizeBounds = getBounds();
-        
-        final Rectangle startBounds = getBounds();
-        
-        final int[] step = {0};
-        animationTimer = new Timer(16, e -> { // 60 FPS
-            step[0]++;
-            
-            if (step[0] > 12) { // 12 frames = 200ms
-                animationTimer.stop();
-                setState(JFrame.ICONIFIED);
-                return;
-            }
-            
-            // Scale down to bottom left
-            float progress = step[0] / 12.0f;
-            progress = progress * progress; // Ease in
-            
-            int newWidth = (int)(startBounds.width * (1 - progress * 0.9)); // Scale to 10%
-            int newHeight = (int)(startBounds.height * (1 - progress * 0.9));
-            int newX = (int)(startBounds.x + (0 - startBounds.x) * progress * 0.3); // Move towards bottom left
-            int newY = (int)(startBounds.y + (Toolkit.getDefaultToolkit().getScreenSize().height - startBounds.y) * progress * 0.3);
-            
-            setBounds(newX, newY, newWidth, newHeight);
-        });
-        animationTimer.start();
-    }
-    
-    private void animateClose() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-        
-        final Rectangle startBounds = getBounds();
-        final Point center = new Point(
-            startBounds.x + startBounds.width / 2,
-            startBounds.y + startBounds.height / 2
-        );
-        
-        final int[] step = {0};
-        animationTimer = new Timer(16, e -> { // 60 FPS
-            step[0]++;
-            
-            if (step[0] > 20) { // 20 frames = ~333ms
-                animationTimer.stop();
-                dispose();
-                System.exit(0);
-                return;
-            }
-            
-            // Simple scale down
-            float scale = 1.0f - (step[0] / 20.0f);
-            int newWidth = (int)(startBounds.width * scale);
-            int newHeight = (int)(startBounds.height * scale);
-            
-            if (newWidth > 0 && newHeight > 0) {
-                setBounds(
-                    center.x - newWidth / 2,
-                    center.y - newHeight / 2,
-                    newWidth,
-                    newHeight
-                );
-            }
-        });
-        animationTimer.start();
-    }
-    
-    private void animateMaximize() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-
-        // Simpan posisi normal sebelum maximize
-        normalBounds = getBounds();
-        
-        final Rectangle startBounds = getBounds();
-        final Rectangle targetBounds = getMaximizedScreenBounds();
-
-        final int[] step = {0};
-        final int maxSteps = 15;
-        animationTimer = new Timer(16, e -> { // 60 FPS ~ 250ms
-            step[0]++;
-            float progress = step[0] / (float) maxSteps;
-            progress = 1 - (1 - progress) * (1 - progress); // ease out curve
-
-            int newX = (int)(startBounds.x + (targetBounds.x - startBounds.x) * progress);
-            int newY = (int)(startBounds.y + (targetBounds.y - startBounds.y) * progress);
-            int newWidth = (int)(startBounds.width + (targetBounds.width - startBounds.width) * progress);
-            int newHeight = (int)(startBounds.height + (targetBounds.height - startBounds.height) * progress);
-
-            setBounds(newX, newY, newWidth, newHeight);
-            updateSplitPaneDivider(newWidth);
-
-            if (step[0] >= maxSteps) {
-                animationTimer.stop();
-                setBounds(targetBounds);
-                updateSplitPaneDivider(targetBounds.width);
-                
-                // Set state setelah animasi selesai
-                isMaximized = true;
-                setExtendedState(JFrame.MAXIMIZED_BOTH);
-                repaint();
-            }
-        });
-
-        animationTimer.start();
-    }
-    
-    private void animateRestore() {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-        
-        // Set state ke NORMAL dulu untuk mencegah interferensi
-        setExtendedState(JFrame.NORMAL);
-        
-        final Rectangle startBounds = getBounds();
-        final Rectangle targetBounds = normalBounds != null ? normalBounds : new Rectangle(100, 100, 650, 350);
-
-        final int[] step = {0};
-        final int maxSteps = 15;
-        animationTimer = new Timer(16, e -> { // 60 FPS ~ 250ms
-            step[0]++;
-            float progress = step[0] / (float) maxSteps;
-            progress = 1 - (1 - progress) * (1 - progress); // ease out curve
-
-            int newX = (int)(startBounds.x + (targetBounds.x - startBounds.x) * progress);
-            int newY = (int)(startBounds.y + (targetBounds.y - startBounds.y) * progress);
-            int newWidth = (int)(startBounds.width + (targetBounds.width - startBounds.width) * progress);
-            int newHeight = (int)(startBounds.height + (targetBounds.height - startBounds.height) * progress);
-
-            setBounds(newX, newY, newWidth, newHeight);
-            updateSplitPaneDivider(newWidth);
-
-            if (step[0] >= maxSteps) {
-                animationTimer.stop();
-                setBounds(targetBounds);
-                updateSplitPaneDivider(targetBounds.width);
-                
-                // Set state setelah animasi selesai
-                isMaximized = false;
-                repaint();
-            }
-        });
-
-        animationTimer.start();
-    }
-    
     // Helper method untuk mendapatkan bounds maksimum
     private Rectangle getMaximizedScreenBounds() {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -645,7 +445,6 @@ public class login extends JFrame {
             screenBounds.height - insets.top - insets.bottom
         );
     }
-    
     // Helper method untuk update split pane divider secara proporsional
     private void updateSplitPaneDivider(int windowWidth) {
         if (splitPane != null) {
@@ -653,7 +452,6 @@ public class login extends JFrame {
             splitPane.setDividerLocation(proportionalDivider);
         }
     }
-    
     // ================= MAIN METHOD (UNTUK TESTING) =================
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
