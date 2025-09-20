@@ -56,7 +56,7 @@ public class login extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 // Panel kiri dengan rounded di kiri atas dan kiri bawah
-                g2d.setColor(new Color(0xB6CEB4));
+                g2d.setColor(new Color(0x1e3c35));
                 g2d.fillRoundRect(0, 0, getWidth() + 15, getHeight(), 20, 20);
                 
                 // Tutup bagian kanan agar persegi (sambung dengan panel kanan)
@@ -115,7 +115,7 @@ public class login extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
                 // Panel kanan dengan rounded di kanan atas dan kanan bawah
-                g2d.setColor(new Color(0x96A78D));
+                g2d.setColor(new Color(0x6da395));
                 g2d.fillRoundRect(-15, 0, getWidth() + 15, getHeight(), 20, 20);
                 
                 // Tutup bagian kiri agar persegi (sambung dengan panel kiri)

@@ -7,6 +7,9 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.*;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Locale;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Room;
 
@@ -18,6 +21,9 @@ public class RoomCRUDPanel extends JPanel {
     private JTextArea txtDescription;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedRoomId = -1;
+    
+    // Formatter untuk Rupiah
+    private final DecimalFormat rupiahFormat = new DecimalFormat("#,###");
 
     public RoomCRUDPanel() {
         initComponents();
@@ -234,6 +240,21 @@ public class RoomCRUDPanel extends JPanel {
         return button;
     }
 
+    // Method helper untuk format Rupiah
+    private String formatToRupiah(double amount) {
+        return "Rp " + rupiahFormat.format(amount);
+    }
+    
+    private double parseFromRupiah(String rupiahString) {
+        // Hapus "Rp", spasi, dan titik pemisah ribuan
+        String cleanString = rupiahString.replaceAll("[^\\d]", "");
+        try {
+            return Double.parseDouble(cleanString);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
     private void addRoom() {
         if (validateInput()) {
             try {
@@ -241,7 +262,7 @@ public class RoomCRUDPanel extends JPanel {
                 room.setRoomNumber(txtRoomNumber.getText().trim());
                 room.setRoomType(txtRoomType.getText().trim());
                 room.setStatus((String) cbStatus.getSelectedItem());
-                room.setPrice(Double.parseDouble(txtPrice.getText().trim()));
+                room.setPrice(parseFromRupiah(txtPrice.getText().trim())); // Parse dari format Rupiah
                 room.setDescription(txtDescription.getText().trim());
 
                 if (insertRoom(room)) {
@@ -270,7 +291,7 @@ public class RoomCRUDPanel extends JPanel {
                 room.setRoomNumber(txtRoomNumber.getText().trim());
                 room.setRoomType(txtRoomType.getText().trim());
                 room.setStatus((String) cbStatus.getSelectedItem());
-                room.setPrice(Double.parseDouble(txtPrice.getText().trim()));
+                room.setPrice(parseFromRupiah(txtPrice.getText().trim())); // Parse dari format Rupiah
                 room.setDescription(txtDescription.getText().trim());
 
                 if (updateRoomInDB(room)) {
@@ -316,6 +337,22 @@ public class RoomCRUDPanel extends JPanel {
         roomTable.clearSelection();
     }
 
+    // Tambahkan method helper untuk format angka
+    private String formatToRupiah(double amount) {
+        return rupiahFormat.format(amount);
+    }
+    
+    private double parseFromRupiah(String rupiahString) {
+        // Hapus semua karakter non-digit
+        String cleanString = rupiahString.replaceAll("[^\\d]", "");
+        try {
+            return Double.parseDouble(cleanString);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+    
+    // Update method validateInput dengan format yang lebih baik
     private boolean validateInput() {
         if (txtRoomNumber.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "No. Kamar tidak boleh kosong!");
@@ -332,10 +369,18 @@ public class RoomCRUDPanel extends JPanel {
             txtPrice.requestFocus();
             return false;
         }
+        
+        // Validasi format harga
+        String priceText = txtPrice.getText().trim();
         try {
-            Double.parseDouble(txtPrice.getText().trim());
+            double price = parseFromRupiah(priceText);
+            if (price <= 0) {
+                JOptionPane.showMessageDialog(this, "Harga harus lebih besar dari 0!");
+                txtPrice.requestFocus();
+                return false;
+            }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Harga harus berupa angka!");
+            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan angka tanpa titik/koma.");
             txtPrice.requestFocus();
             return false;
         }
@@ -354,30 +399,55 @@ public class RoomCRUDPanel extends JPanel {
         }
     }
 
-    private void loadRoomData() {
-        tableModel.setRowCount(0);
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT * FROM rooms ORDER BY room_number";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
+import java.text.NumberFormat;
+import java.util.Locale;
 
-            while (rs.next()) {
-                Object[] row = {
-                    rs.getInt("id"),
-                    rs.getString("room_number"),
-                    rs.getString("room_type"),
-                    rs.getString("status"),
-                    rs.getDouble("price"),
-                    rs.getString("description")
-                };
-                tableModel.addRow(row);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memuat data kamar: " + e.getMessage(), 
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+// Di dalam class, tambahkan formatter
+private final NumberFormat rupiahFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+
+// Update method loadRoomData()
+private void loadRoomData() {
+    tableModel.setRowCount(0);
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "SELECT * FROM rooms ORDER BY room_number";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        ResultSet rs = pstmt.executeQuery();
+
+        while (rs.next()) {
+            Object[] row = {
+                rs.getInt("id"),
+                rs.getString("room_number"),
+                rs.getString("room_type"),
+                rs.getString("status"),
+                rupiahFormat.format(rs.getDouble("price")), // Format ke Rupiah
+                rs.getString("description")
+            };
+            tableModel.addRow(row);
         }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Gagal memuat data kamar: " + e.getMessage(), 
+                "Database Error", JOptionPane.ERROR_MESSAGE);
     }
+}
+
+// Update method loadSelectedRoom() untuk handle format Rupiah
+private void loadSelectedRoom() {
+    int selectedRow = roomTable.getSelectedRow();
+    if (selectedRow >= 0) {
+        selectedRoomId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        txtRoomNumber.setText((String) tableModel.getValueAt(selectedRow, 1));
+        txtRoomType.setText((String) tableModel.getValueAt(selectedRow, 2));
+        cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 3));
+        
+        // Parse harga dari format Rupiah kembali ke angka
+        String priceStr = (String) tableModel.getValueAt(selectedRow, 4);
+        String cleanPrice = priceStr.replaceAll("[^\\d]", ""); // Hapus semua kecuali digit
+        txtPrice.setText(cleanPrice);
+        
+        txtDescription.setText((String) tableModel.getValueAt(selectedRow, 5));
+    }
+}
 
     private boolean insertRoom(Room room) {
         try (Connection conn = DatabaseConnection.getConnection()) {
