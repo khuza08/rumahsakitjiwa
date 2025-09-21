@@ -81,7 +81,6 @@ public class main extends JFrame {
         contentPanel.add(roomCRUDPanel, "KAMAR");
         contentPanel.add(createAppointmentPanel(), "JADWAL");
         contentPanel.add(createReportPanel(), "LAPORAN");
-        contentPanel.add(createSettingsPanel(), "PENGATURAN");
 
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
@@ -178,8 +177,8 @@ public class main extends JFrame {
         sidebarPanel.setOpaque(false);
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
 
-        String[] menuItems = {"Dashboard","Data Pasien","Data Dokter","Data Kamar","Jadwal","Laporan","Pengaturan"};
-        String[] menuKeys = {"DASHBOARD","PASIEN","DOKTER","KAMAR","JADWAL","LAPORAN","PENGATURAN"};
+        String[] menuItems = {"Dashboard","Data Pasien","Data Dokter","Data Kamar","Jadwal","Laporan"};
+        String[] menuKeys = {"DASHBOARD","PASIEN","DOKTER","KAMAR","JADWAL","LAPORAN"};
 
         for(int i=0;i<menuItems.length;i++) {
             final String key=menuKeys[i];
