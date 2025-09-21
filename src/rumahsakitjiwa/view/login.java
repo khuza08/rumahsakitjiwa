@@ -28,9 +28,11 @@ public class login extends JFrame {
     public login() {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
-            UIManager.put("Button.arc", 20);
-            UIManager.put("TextComponent.arc", 15);
-            UIManager.put("Component.arc", 15);
+            // Konfigurasi untuk rounded components
+            UIManager.put("Button.arc", 30); // Lebih rounded untuk button
+            UIManager.put("TextComponent.arc", 25); // Lebih rounded untuk text fields
+            UIManager.put("Component.arc", 25);
+            UIManager.put("Button.margin", new Insets(12, 20, 12, 20)); // Padding button
         } catch (Exception ex) {
             System.err.println("Gagal load FlatLaf");
         }
@@ -124,71 +126,160 @@ public class login extends JFrame {
 
         // Title
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        JLabel titleLabel = new JLabel("LOGIN", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Medicare Login Portal", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setForeground(new Color(0x1e3c35)); // Blue color
         rightPanel.add(titleLabel, gbc);
 
-        // Username
+        // Username - hapus label terpisah
         gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
-        JLabel userLabel = new JLabel("👤");
-        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        rightPanel.add(userLabel, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
 
-        usernameField = new JTextField(15);
-        usernameField.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
+        // ROUNDED USERNAME FIELD dengan ikon di dalam
+        usernameField = new JTextField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background rounded
+                g2.setColor(new Color(0x43786e)); // Blue background with transparency
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
+                
+                // Gambar ikon user di dalam field
+                g2.setColor(new Color(0x6da395));
+                g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                FontMetrics fm = g2.getFontMetrics();
+                int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
+                g2.drawString("👤", 15, iconY);
+                
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        usernameField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 15)); // Left padding lebih besar untuk ikon
         usernameField.setOpaque(false);
-        usernameField.setForeground(Color.WHITE);
-        usernameField.setCaretColor(Color.WHITE);
+        usernameField.setForeground(new Color(0x6da395)); // White text on blue background
+        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        usernameField.setCaretColor(Color.WHITE); // White cursor
         usernameField.setText("Username");
-        usernameField.setForeground(new Color(200, 200, 200, 150));
         
         setupPlaceholder(usernameField, "Username");
         usernameField.addActionListener(e -> passwordField.requestFocus());
         
-        gbc.gridx = 1;
         rightPanel.add(usernameField, gbc);
 
-        // Password
-        gbc.gridx = 0; gbc.gridy = 2;
-        JLabel passLabel = new JLabel("🔒");
-        passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        rightPanel.add(passLabel, gbc);
+        // Password - hapus label terpisah
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         
-        // Panel untuk password field dan tombol mata
-        JPanel passwordPanel = new JPanel(new BorderLayout());
-        passwordPanel.setOpaque(false);
-        
-        passwordField = new JPasswordField(15);
-        passwordField.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
+        // ROUNDED PASSWORD CONTAINER dengan ikon di dalam
+        JPanel passwordContainer = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background rounded
+                g2.setColor(new Color(0x43786e)); // Blue background with transparency
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
+                
+                // Gambar ikon lock di dalam field
+                g2.setColor(new Color(0x6da395));
+                g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                FontMetrics fm = g2.getFontMetrics();
+                int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
+                g2.drawString("🔒", 15, iconY);
+                
+                g2.dispose();
+            }
+        };
+        passwordContainer.setOpaque(false);
+        passwordContainer.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+
+        passwordField = new JPasswordField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        passwordField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 5)); // Left padding lebih besar untuk ikon
         passwordField.setOpaque(false);
-        passwordField.setForeground(Color.WHITE);
-        passwordField.setCaretColor(Color.WHITE);
+        passwordField.setForeground(new Color(0x6da395)); // White text on blue background
+        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passwordField.setCaretColor(Color.WHITE); // White cursor
         passwordField.setEchoChar((char) 0);
         passwordField.setText("Password");
-        passwordField.setForeground(new Color(200, 200, 200, 150));
         
         setupPasswordPlaceholder(passwordField);
         passwordField.addActionListener(e -> loginButton.doClick());
         
         // Membuat tombol toggle password
-        togglePasswordButton = createToggleButton();
+        togglePasswordButton = new JButton("👁️") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(0, 0, 0, 30));
+                    g2.fillOval(5, 5, getWidth()-10, getHeight()-10);
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(0x6da395));
+                    g2.fillOval(5, 5, getWidth()-10, getHeight()-10);
+                }
+                
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        togglePasswordButton.setContentAreaFilled(false);
+        togglePasswordButton.setBorderPainted(false);
+        togglePasswordButton.setFocusPainted(false);
+        togglePasswordButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        togglePasswordButton.setPreferredSize(new Dimension(40, 30));
+        togglePasswordButton.setForeground(new Color(0x6da395));
+        togglePasswordButton.setToolTipText("Tampilkan Password");
         togglePasswordButton.addActionListener(e -> togglePasswordVisibility());
         
-        passwordPanel.add(passwordField, BorderLayout.CENTER);
-        passwordPanel.add(togglePasswordButton, BorderLayout.EAST);
+        passwordContainer.add(passwordField, BorderLayout.CENTER);
+        passwordContainer.add(togglePasswordButton, BorderLayout.EAST);
         
-        gbc.gridx = 1;
-        rightPanel.add(passwordPanel, gbc);
+        rightPanel.add(passwordContainer, gbc);
 
-        // Login Button
-        loginButton = new JButton("LOGIN");
-        loginButton.setBackground(new Color(0xD9E9CF));
-        loginButton.setForeground(new Color(0x96A78D));
-        loginButton.setFocusPainted(false);
+        // ROUNDED LOGIN BUTTON
+        loginButton = new JButton("Login →") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background solid color
+                Color bgColor;
+                if (getModel().isPressed()) {
+                    bgColor = new Color(0x1b3831); //  pressed
+                } else if (getModel().isRollover()) {
+                    bgColor = new Color(0x1e3c35); //  hover
+                } else {
+                    bgColor = new Color(0x1e3c35); // Default
+                }
+                
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        loginButton.setContentAreaFilled(false);
         loginButton.setBorderPainted(false);
-        loginButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        loginButton.setFocusPainted(false);
+        loginButton.setForeground(new Color(0x6da395));
+        loginButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        loginButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        loginButton.setPreferredSize(new Dimension(200, 45));
         loginButton.addActionListener(e -> performLogin());
         
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
@@ -205,46 +296,17 @@ public class login extends JFrame {
         addUniversalDragFunctionality();
         normalBounds = getBounds();
     }
-
-    // Metode untuk membuat tombol toggle password
-    private JButton createToggleButton() {
-        JButton button = new JButton("👁️");
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(30, 30));
-        button.setForeground(Color.WHITE);
-        button.setToolTipText("Tampilkan Password");
-        
-        // Mengubah opacity saat hover
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setOpaque(true);
-                button.setBackground(new Color(255, 255, 255, 50));
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setOpaque(false);
-                button.setBackground(null);
-            }
-        });
-        
-        return button;
-    }
     
     // Metode untuk toggle visibility password
     private void togglePasswordVisibility() {
-        if (passwordField.getEchoChar() == '●') {
+        if (passwordField.getEchoChar() == '★') {
             // Password sedang disembunyikan, tampilkan password
             passwordField.setEchoChar((char) 0);
             togglePasswordButton.setText("🙈");
             togglePasswordButton.setToolTipText("Sembunyikan Password");
         } else {
             // Password sedang ditampilkan, sembunyikan password
-            passwordField.setEchoChar('●');
+            passwordField.setEchoChar('★');
             togglePasswordButton.setText("👁️");
             togglePasswordButton.setToolTipText("Tampilkan Password");
         }
@@ -264,7 +326,7 @@ public class login extends JFrame {
             public void focusLost(java.awt.event.FocusEvent e) {
                 if (field.getText().isEmpty()) {
                     field.setText(placeholder);
-                    field.setForeground(new Color(200, 200, 200, 150));
+                    field.setForeground(new Color(0x6da395)); // Light white for placeholder
                 }
             }
         });
@@ -277,7 +339,7 @@ public class login extends JFrame {
                 if (String.valueOf(field.getPassword()).equals("Password")) {
                     field.setText("");
                     field.setForeground(Color.WHITE);
-                    field.setEchoChar('●');
+                    field.setEchoChar('★');
                 }
             }
             @Override
@@ -285,7 +347,7 @@ public class login extends JFrame {
                 if (field.getPassword().length == 0) {
                     field.setEchoChar((char) 0);
                     field.setText("Password");
-                    field.setForeground(new Color(200, 200, 200, 150));
+                    field.setForeground(new Color(0x6da395)); // Light white for placeholder
                 }
             }
         });
@@ -378,7 +440,7 @@ public class login extends JFrame {
 
     private void clearPassword() {
         passwordField.setText("Password");
-        passwordField.setForeground(new Color(200, 200, 200, 150));
+        passwordField.setForeground(new Color(255, 255, 255, 150)); // Light white for placeholder
         passwordField.setEchoChar((char) 0);
         // Reset tombol mata ke keadaan semula
         togglePasswordButton.setText("👁️");
