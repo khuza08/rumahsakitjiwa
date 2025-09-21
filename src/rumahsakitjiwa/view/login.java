@@ -13,6 +13,7 @@ public class login extends JFrame {
     public JTextField usernameField;
     public JPasswordField passwordField;
     public JButton loginButton;
+    private JButton togglePasswordButton; // Tombol untuk toggle visibility password
     private Point mousePoint;
     private Rectangle normalBounds;
     private JSplitPane splitPane;
@@ -155,6 +156,10 @@ public class login extends JFrame {
         passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         rightPanel.add(passLabel, gbc);
         
+        // Panel untuk password field dan tombol mata
+        JPanel passwordPanel = new JPanel(new BorderLayout());
+        passwordPanel.setOpaque(false);
+        
         passwordField = new JPasswordField(15);
         passwordField.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
         passwordField.setOpaque(false);
@@ -167,8 +172,15 @@ public class login extends JFrame {
         setupPasswordPlaceholder(passwordField);
         passwordField.addActionListener(e -> loginButton.doClick());
         
+        // Membuat tombol toggle password
+        togglePasswordButton = createToggleButton();
+        togglePasswordButton.addActionListener(e -> togglePasswordVisibility());
+        
+        passwordPanel.add(passwordField, BorderLayout.CENTER);
+        passwordPanel.add(togglePasswordButton, BorderLayout.EAST);
+        
         gbc.gridx = 1;
-        rightPanel.add(passwordField, gbc);
+        rightPanel.add(passwordPanel, gbc);
 
         // Login Button
         loginButton = new JButton("LOGIN");
@@ -192,6 +204,51 @@ public class login extends JFrame {
         splitPane.setRightComponent(rightPanel);
         addUniversalDragFunctionality();
         normalBounds = getBounds();
+    }
+
+    // Metode untuk membuat tombol toggle password
+    private JButton createToggleButton() {
+        JButton button = new JButton("👁️");
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(30, 30));
+        button.setForeground(Color.WHITE);
+        button.setToolTipText("Tampilkan Password");
+        
+        // Mengubah opacity saat hover
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setOpaque(true);
+                button.setBackground(new Color(255, 255, 255, 50));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setOpaque(false);
+                button.setBackground(null);
+            }
+        });
+        
+        return button;
+    }
+    
+    // Metode untuk toggle visibility password
+    private void togglePasswordVisibility() {
+        if (passwordField.getEchoChar() == '●') {
+            // Password sedang disembunyikan, tampilkan password
+            passwordField.setEchoChar((char) 0);
+            togglePasswordButton.setText("🙈");
+            togglePasswordButton.setToolTipText("Sembunyikan Password");
+        } else {
+            // Password sedang ditampilkan, sembunyikan password
+            passwordField.setEchoChar('●');
+            togglePasswordButton.setText("👁️");
+            togglePasswordButton.setToolTipText("Tampilkan Password");
+        }
+        passwordField.requestFocus();
     }
 
     private void setupPlaceholder(JTextField field, String placeholder) {
@@ -323,6 +380,9 @@ public class login extends JFrame {
         passwordField.setText("Password");
         passwordField.setForeground(new Color(200, 200, 200, 150));
         passwordField.setEchoChar((char) 0);
+        // Reset tombol mata ke keadaan semula
+        togglePasswordButton.setText("👁️");
+        togglePasswordButton.setToolTipText("Tampilkan Password");
         usernameField.requestFocus();
     }
 
