@@ -8,8 +8,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.sql.*;
-import rumahsakitjiwa.database.DatabaseConnection;
 
 public class main extends JFrame {
     private Point mousePoint;
@@ -19,9 +17,11 @@ public class main extends JFrame {
     private JLabel dateLabel;
     private Timer clockTimer;
 
-    // Panel utama untuk konten
     private JPanel contentPanel;
     private CardLayout cardLayout;
+
+    private Dashboard dashboardPanel;
+    private RoomCRUDPanel roomCRUDPanel;
 
     public main() {
         try {
@@ -29,7 +29,7 @@ public class main extends JFrame {
             UIManager.put("Button.arc", 20);
             UIManager.put("Component.arc", 15);
         } catch (Exception ex) {
-            System.err.println("Gagal load FlatLaf");
+            System.err.println("Failed to load FlatLaf");
         }
 
         setUndecorated(true);
@@ -47,7 +47,6 @@ public class main extends JFrame {
     }
 
     private void initializeComponents() {
-        // Panel utama dengan rounded corner
         JPanel mainPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -60,27 +59,30 @@ public class main extends JFrame {
         };
         mainPanel.setOpaque(false);
 
-        // Header Panel dengan tombol macOS dan info
+        // Create header and sidebar panels
         JPanel headerPanel = createHeaderPanel();
-
-        // Sidebar untuk navigasi
         JPanel sidebarPanel = createSidebarPanel();
 
-        // Content panel dengan CardLayout untuk switching antar menu
+        // Create main content panel with CardLayout
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
         contentPanel.setOpaque(false);
 
-        // Tambahkan berbagai panel konten
-        contentPanel.add(new Dashboard(), "DASHBOARD");   // Gunakan class Dashboard terpisah
+        // Create dashboard and room CRUD panels
+        dashboardPanel = new Dashboard();
+        roomCRUDPanel = new RoomCRUDPanel();
+
+        // Link dashboard instance to room panel for refresh
+        roomCRUDPanel.setDashboard(dashboardPanel);
+
+        contentPanel.add(dashboardPanel, "DASHBOARD");
         contentPanel.add(createPatientPanel(), "PASIEN");
         contentPanel.add(createDoctorPanel(), "DOKTER");
-        contentPanel.add(new RoomCRUDPanel(), "KAMAR"); // Pastikan RoomCRUDPanel ada di project Anda
+        contentPanel.add(roomCRUDPanel, "KAMAR");
         contentPanel.add(createAppointmentPanel(), "JADWAL");
         contentPanel.add(createReportPanel(), "LAPORAN");
         contentPanel.add(createSettingsPanel(), "PENGATURAN");
 
-        // Layout utama
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
         centerPanel.add(sidebarPanel, BorderLayout.WEST);
@@ -97,7 +99,6 @@ public class main extends JFrame {
         headerPanel.setOpaque(false);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 15, 10, 15));
 
-        // Tombol macOS di kiri
         JPanel macOSPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         macOSPanel.setOpaque(false);
 
@@ -110,9 +111,7 @@ public class main extends JFrame {
             dispose();
             System.exit(0);
         });
-
         minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
-
         maximizeBtn.addActionListener(e -> {
             if (isMaximized) {
                 setBounds(normalBounds);
@@ -123,10 +122,10 @@ public class main extends JFrame {
                 Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
                 Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
                 Rectangle targetBounds = new Rectangle(
-                        screenBounds.x + insets.left,
-                        screenBounds.y + insets.top,
-                        screenBounds.width - insets.left - insets.right,
-                        screenBounds.height - insets.top - insets.bottom);
+                    screenBounds.x + insets.left,
+                    screenBounds.y + insets.top,
+                    screenBounds.width - insets.left - insets.right,
+                    screenBounds.height - insets.top - insets.bottom);
                 normalBounds = getBounds();
                 setBounds(targetBounds);
                 setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -138,13 +137,11 @@ public class main extends JFrame {
         macOSPanel.add(minimizeBtn);
         macOSPanel.add(maximizeBtn);
 
-        // Title di tengah
         JLabel titleLabel = new JLabel("Sistem Informasi Rumah Sakit Jiwa", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
 
-        // Info waktu dan user di kanan
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        JPanel infoPanel = new JPanel(new GridLayout(2,1,0,2));
         infoPanel.setOpaque(false);
 
         timeLabel = new JLabel("", SwingConstants.RIGHT);
@@ -177,25 +174,23 @@ public class main extends JFrame {
             }
         };
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
-        sidebarPanel.setPreferredSize(new Dimension(200, 0));
+        sidebarPanel.setPreferredSize(new Dimension(200,0));
         sidebarPanel.setOpaque(false);
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
 
-        String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Data Kamar", "Jadwal", "Laporan", "Pengaturan"};
-        String[] menuKeys = {"DASHBOARD", "PASIEN", "DOKTER", "KAMAR", "JADWAL", "LAPORAN", "PENGATURAN"};
+        String[] menuItems = {"Dashboard","Data Pasien","Data Dokter","Data Kamar","Jadwal","Laporan","Pengaturan"};
+        String[] menuKeys = {"DASHBOARD","PASIEN","DOKTER","KAMAR","JADWAL","LAPORAN","PENGATURAN"};
 
-        for (int i = 0; i < menuItems.length; i++) {
-            final String menuKey = menuKeys[i];
-            JButton menuBtn = createMenuButton(menuItems[i]);
-            menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
-            sidebarPanel.add(menuBtn);
-            sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        for(int i=0;i<menuItems.length;i++) {
+            final String key=menuKeys[i];
+            JButton btn = createMenuButton(menuItems[i]);
+            btn.addActionListener(e -> cardLayout.show(contentPanel,key));
+            sidebarPanel.add(btn);
+            sidebarPanel.add(Box.createRigidArea(new Dimension(0,8)));
         }
 
-        // Spacer
         sidebarPanel.add(Box.createVerticalGlue());
 
-        // Logout button
         JButton logoutBtn = createMenuButton("Logout");
         logoutBtn.setBackground(new Color(0xFF5F57));
         logoutBtn.addActionListener(e -> logout());
@@ -206,8 +201,8 @@ public class main extends JFrame {
 
     private JButton createMenuButton(String text) {
         JButton button = new JButton(text);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        button.setPreferredSize(new Dimension(170, 40));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE,40));
+        button.setPreferredSize(new Dimension(170,40));
         button.setBackground(new Color(255, 255, 255, 100));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
@@ -216,12 +211,11 @@ public class main extends JFrame {
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        button.addMouseListener(new MouseAdapter() {
+        button.addMouseListener(new MouseAdapter(){
             @Override
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(new Color(255, 255, 255, 150));
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
                 button.setBackground(new Color(255, 255, 255, 100));
@@ -234,47 +228,47 @@ public class main extends JFrame {
     private JPanel createPatientPanel() {
         return createContentPanel("Data Pasien",
                 "Di sini akan ditampilkan daftar pasien, form tambah pasien baru,\n" +
-                        "pencarian pasien, dan riwayat medis pasien.");
+                "pencarian pasien, dan riwayat medis pasien.");
     }
 
     private JPanel createDoctorPanel() {
         return createContentPanel("Data Dokter",
                 "Di sini akan ditampilkan daftar dokter, jadwal praktek,\n" +
-                        "spesialisasi, dan informasi kontak dokter.");
+                "spesialisasi, dan informasi kontak dokter.");
     }
 
     private JPanel createAppointmentPanel() {
         return createContentPanel("Jadwal Konsultasi",
                 "Di sini akan ditampilkan kalender jadwal, booking appointment,\n" +
-                        "konfirmasi jadwal, dan reminder untuk pasien.");
+                "konfirmasi jadwal, dan reminder untuk pasien.");
     }
 
     private JPanel createReportPanel() {
         return createContentPanel("Laporan",
                 "Di sini akan ditampilkan laporan statistik pasien,\n" +
-                        "laporan keuangan, dan export data ke PDF/Excel.");
+                "laporan keuangan, dan export data ke PDF/Excel.");
     }
 
     private JPanel createSettingsPanel() {
         return createContentPanel("Pengaturan",
                 "Di sini akan ditampilkan pengaturan aplikasi,\n" +
-                        "manajemen user, backup data, dan konfigurasi sistem.");
+                "manajemen user, backup data, dan konfigurasi sistem.");
     }
 
     private JPanel createContentPanel(String title, String description) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        panel.setBorder(BorderFactory.createEmptyBorder(30,30,30,30));
 
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(Color.WHITE);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,20,0));
 
         JLabel descLabel = new JLabel("<html><div style='text-align:center;'>" +
-                description.replace("\n", "<br>") + "</div></html>", SwingConstants.CENTER);
+                description.replace("\n","<br>")+"</div></html>", SwingConstants.CENTER);
         descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        descLabel.setForeground(new Color(255, 255, 255, 200));
+        descLabel.setForeground(new Color(255,255,255,200));
 
         panel.add(titleLabel, BorderLayout.NORTH);
         panel.add(descLabel, BorderLayout.CENTER);
@@ -298,70 +292,62 @@ public class main extends JFrame {
     }
 
     private void logout() {
-        int choice = JOptionPane.showConfirmDialog(
-                this,
-                "Apakah Anda yakin ingin logout?",
-                "Konfirmasi Logout",
-                JOptionPane.YES_NO_OPTION
-        );
-
-        if (choice == JOptionPane.YES_OPTION) {
-            if (clockTimer != null) {
-                clockTimer.stop();
-            }
+        int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin logout?",
+                "Konfirmasi Logout", JOptionPane.YES_NO_OPTION);
+        if(confirm == JOptionPane.YES_OPTION) {
+            if(clockTimer != null) clockTimer.stop();
             SwingUtilities.invokeLater(() -> {
-                new login().setVisible(true);  // Pastikan class Login sudah ada
+                new login().setVisible(true); // Pastikan class login ada
                 this.dispose();
             });
         }
     }
 
     private JButton createMacOSButton(Color color) {
-        JButton button = new JButton() {
+        JButton button = new JButton(){
             @Override
             protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
+                Graphics2D g2d = (Graphics2D)g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
-                g2d.fillOval(0, 0, getWidth(), getHeight());
-                if (getModel().isRollover()) {
-                    g2d.setColor(new Color(0, 0, 0, 150));
+                g2d.fillOval(0,0,getWidth(),getHeight());
+                if(getModel().isRollover()) {
+                    g2d.setColor(new Color(0,0,0,150));
                     g2d.setStroke(new BasicStroke(1.2f));
-                    int centerX = getWidth() / 2;
-                    int centerY = getHeight() / 2;
-                    if (color.equals(new Color(0xFF5F57))) {
-                        g2d.drawLine(centerX - 3, centerY - 3, centerX + 3, centerY + 3);
-                        g2d.drawLine(centerX + 3, centerY - 3, centerX - 3, centerY + 3);
-                    } else if (color.equals(new Color(0xFFBD2E))) {
-                        g2d.drawLine(centerX - 3, centerY, centerX + 3, centerY);
-                    } else if (color.equals(new Color(0x28CA42))) {
-                        if (isMaximized) {
-                            g2d.drawRect(centerX - 2, centerY - 1, 3, 3);
-                            g2d.drawRect(centerX - 1, centerY - 2, 3, 3);
+                    int centerX=getWidth()/2;
+                    int centerY=getHeight()/2;
+                    if(color.equals(new Color(0xFF5F57))) {
+                        g2d.drawLine(centerX-3,centerY-3,centerX+3,centerY+3);
+                        g2d.drawLine(centerX+3,centerY-3,centerX-3,centerY+3);
+                    } else if(color.equals(new Color(0xFFBD2E))) {
+                        g2d.drawLine(centerX-3,centerY,centerX+3,centerY);
+                    } else if(color.equals(new Color(0x28CA42))) {
+                        if(isMaximized) {
+                            g2d.drawRect(centerX-2,centerY-1,3,3);
+                            g2d.drawRect(centerX-1,centerY-2,3,3);
                         } else {
-                            g2d.drawRect(centerX - 2, centerY - 2, 4, 4);
+                            g2d.drawRect(centerX-2,centerY-2,4,4);
                         }
                     }
                 }
                 g2d.dispose();
             }
         };
-        button.setPreferredSize(new Dimension(14, 14));
+        button.setPreferredSize(new Dimension(14,14));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.addMouseListener(new MouseAdapter() {
+        button.addMouseListener(new MouseAdapter(){
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setPreferredSize(new Dimension(15, 15));
+                button.setPreferredSize(new Dimension(15,15));
                 button.revalidate();
                 button.repaint();
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setPreferredSize(new Dimension(14, 14));
+                button.setPreferredSize(new Dimension(14,14));
                 button.revalidate();
                 button.repaint();
             }
@@ -370,16 +356,16 @@ public class main extends JFrame {
     }
 
     private void addUniversalDragFunctionality() {
-        this.addMouseListener(new MouseAdapter() {
+        addMouseListener(new MouseAdapter(){
             public void mousePressed(MouseEvent e) {
                 mousePoint = e.getPoint();
             }
         });
-        this.addMouseMotionListener(new MouseMotionAdapter() {
+        addMouseMotionListener(new MouseMotionAdapter(){
             public void mouseDragged(MouseEvent e) {
-                if (!isMaximized) {
+                if(!isMaximized){
                     Point currentPoint = e.getLocationOnScreen();
-                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                    setLocation(currentPoint.x - mousePoint.x,currentPoint.y - mousePoint.y);
                 }
             }
         });
@@ -387,25 +373,23 @@ public class main extends JFrame {
     }
 
     private void addDragToAllComponents(Container container) {
-        for (Component comp : container.getComponents()) {
-            if (comp instanceof JButton) {
-                continue;
-            }
-            comp.addMouseListener(new MouseAdapter() {
+        for(Component c : container.getComponents()){
+            if(c instanceof JButton) continue;
+            c.addMouseListener(new MouseAdapter(){
                 public void mousePressed(MouseEvent e) {
-                    mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), main.this);
+                    mousePoint = SwingUtilities.convertPoint(c,e.getPoint(),main.this);
                 }
             });
-            comp.addMouseMotionListener(new MouseMotionAdapter() {
+            c.addMouseMotionListener(new MouseMotionAdapter(){
                 public void mouseDragged(MouseEvent e) {
-                    if (!isMaximized) {
+                    if(!isMaximized){
                         Point currentPoint = e.getLocationOnScreen();
-                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                        setLocation(currentPoint.x - mousePoint.x,currentPoint.y - mousePoint.y);
                     }
                 }
             });
-            if (comp instanceof Container) {
-                addDragToAllComponents((Container) comp);
+            if(c instanceof Container){
+                addDragToAllComponents((Container)c);
             }
         }
     }
