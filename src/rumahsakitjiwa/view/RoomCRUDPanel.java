@@ -15,10 +15,13 @@ public class RoomCRUDPanel extends JPanel {
     private JTable roomTable;
     private JTextField txtRoomNumber, txtRoomType, txtPrice;
     private JComboBox<String> cbStatus;
+    private JComboBox<String> cbFilterStatus; // filter status
     private JTextArea txtDescription;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedRoomId = -1;
     private final NumberFormat rupiahFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+
+    private JLabel lblTotalRooms, lblAvailableRooms, lblOccupiedRooms, lblMaintenanceRooms;
 
     private Dashboard dashboard;
 
@@ -51,51 +54,57 @@ public class RoomCRUDPanel extends JPanel {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(255, 255, 255, 200));
-                g2d.fillRoundRect(0,0,getWidth(),getHeight(),15,15);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
                 g2d.dispose();
             }
         };
         formPanel.setLayout(new GridBagLayout());
-        formPanel.setPreferredSize(new Dimension(350,0));
+        formPanel.setPreferredSize(new Dimension(350, 0));
         formPanel.setOpaque(false);
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5,5,5,5);
+        gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
         JLabel titleLabel = new JLabel("Form Data Kamar");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(new Color(0x6da395));
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
         formPanel.add(titleLabel, gbc);
 
         gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         formPanel.add(new JLabel("No. Kamar:"), gbc);
         txtRoomNumber = new JTextField(15);
         gbc.gridx = 1;
         formPanel.add(txtRoomNumber, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         txtRoomType = new JTextField(15);
         gbc.gridx = 1;
         formPanel.add(txtRoomType, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         formPanel.add(new JLabel("Status:"), gbc);
         cbStatus = new JComboBox<>(new String[]{"Tersedia", "Terisi", "Maintenance"});
         gbc.gridx = 1;
         formPanel.add(cbStatus, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         formPanel.add(new JLabel("Harga/Hari:"), gbc);
         txtPrice = new JTextField(15);
-        txtPrice.setToolTipText("Contoh: 1200000, 1.200.000, 1,2jt, atau 100rb");
         gbc.gridx = 1;
         formPanel.add(txtPrice, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         formPanel.add(new JLabel("Deskripsi:"), gbc);
         txtDescription = new JTextArea(3, 15);
         txtDescription.setLineWrap(true);
@@ -121,7 +130,9 @@ public class RoomCRUDPanel extends JPanel {
         buttonPanel.add(btnDelete);
         buttonPanel.add(btnClear);
 
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
 
@@ -129,27 +140,27 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private JPanel createTablePanel() {
-        JPanel tablePanel = new JPanel(new BorderLayout()){
+        JPanel tablePanel = new JPanel(new BorderLayout()) {
             @Override
-            protected void paintComponent(Graphics g){
-                Graphics2D g2d= (Graphics2D)g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(255,255,255,200));
-                g2d.fillRoundRect(0,0,getWidth(),getHeight(),15,15);
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(new Color(255, 255, 255, 200));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
                 g2d.dispose();
             }
         };
         tablePanel.setOpaque(false);
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JLabel tableTitle = new JLabel("Daftar Kamar");
-        tableTitle.setFont(new Font("Segoe UI",Font.BOLD,16));
+        tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
         tableTitle.setForeground(new Color(0x6da395));
-        tablePanel.add(tableTitle,BorderLayout.NORTH);
+        tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        String[] columns={"ID","No. Kamar","Tipe","Status","Harga","Deskripsi"};
-        tableModel = new DefaultTableModel(columns,0){
+        String[] columns = {"ID", "No. Kamar", "Tipe", "Status", "Harga", "Deskripsi"};
+        tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row,int column){
+            public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
@@ -157,7 +168,7 @@ public class RoomCRUDPanel extends JPanel {
         roomTable = new JTable(tableModel);
         roomTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         roomTable.getSelectionModel().addListSelectionListener(e -> {
-            if(!e.getValueIsAdjusting()){
+            if (!e.getValueIsAdjusting()) {
                 loadSelectedRoom();
             }
         });
@@ -176,6 +187,31 @@ public class RoomCRUDPanel extends JPanel {
         scrollPane.getViewport().setOpaque(false);
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
+        // Panel filter dan label jumlah kamar
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.setOpaque(false);
+
+        filterPanel.add(new JLabel("Filter Status:"));
+        cbFilterStatus = new JComboBox<>(new String[]{"Semua", "Tersedia", "Terisi", "Maintenance"});
+        cbFilterStatus.addActionListener(e -> loadRoomData());
+        filterPanel.add(cbFilterStatus);
+
+        lblTotalRooms = new JLabel("Total Kamar: 0");
+        lblAvailableRooms = new JLabel("Tersedia: 0");
+        lblOccupiedRooms = new JLabel("Terisi: 0");
+        lblMaintenanceRooms = new JLabel("Maintenance: 0");
+
+        filterPanel.add(Box.createHorizontalStrut(20));
+        filterPanel.add(lblTotalRooms);
+        filterPanel.add(Box.createHorizontalStrut(10));
+        filterPanel.add(lblAvailableRooms);
+        filterPanel.add(Box.createHorizontalStrut(10));
+        filterPanel.add(lblOccupiedRooms);
+        filterPanel.add(Box.createHorizontalStrut(10));
+        filterPanel.add(lblMaintenanceRooms);
+
+        tablePanel.add(filterPanel, BorderLayout.SOUTH);
+
         setupTable();
 
         return tablePanel;
@@ -188,21 +224,21 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private JButton createStyledButton(String text, Color color) {
-        JButton button = new JButton(text){
+        JButton button = new JButton(text) {
             @Override
-            protected void paintComponent(Graphics g){
-                Graphics2D g2d= (Graphics2D)g.create();
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                if(getModel().isPressed()){
+                if (getModel().isPressed()) {
                     g2d.setColor(color.darker());
-                }else if(getModel().isRollover()){
+                } else if (getModel().isRollover()) {
                     g2d.setColor(color.brighter());
-                }else{
+                } else {
                     g2d.setColor(color);
                 }
 
-                g2d.fillRoundRect(0,0,getWidth(),getHeight(),10,10);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2d.setColor(Color.WHITE);
                 g2d.setFont(getFont());
 
@@ -216,7 +252,7 @@ public class RoomCRUDPanel extends JPanel {
             }
         };
 
-        button.setPreferredSize(new Dimension(80,35));
+        button.setPreferredSize(new Dimension(80, 35));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
@@ -226,35 +262,35 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private void addRoom() {
-        if(validateInput()){
-            try{
+        if (validateInput()) {
+            try {
                 Room room = new Room();
                 room.setRoomNumber(txtRoomNumber.getText().trim());
                 room.setRoomType(txtRoomType.getText().trim());
                 room.setStatus((String) cbStatus.getSelectedItem());
                 room.setPrice(parseFromRupiah(txtPrice.getText().trim()));
                 room.setDescription(txtDescription.getText().trim());
-                if(insertRoom(room)){
+                if (insertRoom(room)) {
                     JOptionPane.showMessageDialog(this, "Data kamar berhasil ditambahkan!");
                     loadRoomData();
                     clearForm();
-                    if(dashboard != null) dashboard.refreshDashboard();
-                }else{
+                    if (dashboard != null) dashboard.refreshDashboard();
+                } else {
                     JOptionPane.showMessageDialog(this, "Gagal menambah data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            }catch(NumberFormatException e){
+            } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Harga harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void updateRoom() {
-        if(selectedRoomId == -1){
+        if (selectedRoomId == -1) {
             JOptionPane.showMessageDialog(this, "Pilih kamar yang akan diupdate!");
             return;
         }
-        if(validateInput()){
-            try{
+        if (validateInput()) {
+            try {
                 Room room = new Room();
                 room.setId(selectedRoomId);
                 room.setRoomNumber(txtRoomNumber.getText().trim());
@@ -262,35 +298,35 @@ public class RoomCRUDPanel extends JPanel {
                 room.setStatus((String) cbStatus.getSelectedItem());
                 room.setPrice(parseFromRupiah(txtPrice.getText().trim()));
                 room.setDescription(txtDescription.getText().trim());
-                if(updateRoomInDB(room)){
+                if (updateRoomInDB(room)) {
                     JOptionPane.showMessageDialog(this, "Data kamar berhasil diupdate!");
                     loadRoomData();
                     clearForm();
-                    if(dashboard != null) dashboard.refreshDashboard();
-                }else{
+                    if (dashboard != null) dashboard.refreshDashboard();
+                } else {
                     JOptionPane.showMessageDialog(this, "Gagal mengupdate data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            }catch(NumberFormatException e){
+            } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Harga harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
     private void deleteRoom() {
-        if(selectedRoomId == -1){
+        if (selectedRoomId == -1) {
             JOptionPane.showMessageDialog(this, "Pilih kamar yang akan dihapus!");
             return;
         }
         int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin menghapus data kamar ini?",
                 "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
 
-        if(confirm == JOptionPane.YES_OPTION){
-            if(deleteRoomFromDB(selectedRoomId)){
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (deleteRoomFromDB(selectedRoomId)) {
                 JOptionPane.showMessageDialog(this, "Data kamar berhasil dihapus!");
                 loadRoomData();
                 clearForm();
-                if(dashboard != null) dashboard.refreshDashboard();
-            }else{
+                if (dashboard != null) dashboard.refreshDashboard();
+            } else {
                 JOptionPane.showMessageDialog(this, "Gagal menghapus data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
@@ -307,37 +343,30 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private boolean validateInput() {
-        if(txtRoomNumber.getText().trim().isEmpty()){
+        if (txtRoomNumber.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "No. Kamar tidak boleh kosong!");
             txtRoomNumber.requestFocus();
             return false;
         }
-        if(txtRoomType.getText().trim().isEmpty()){
+        if (txtRoomType.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Tipe Kamar tidak boleh kosong!");
             txtRoomType.requestFocus();
             return false;
         }
-        if(txtPrice.getText().trim().isEmpty()){
+        if (txtPrice.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Harga tidak boleh kosong!");
             txtPrice.requestFocus();
             return false;
         }
-        try{
+        try {
             double price = parseFromRupiah(txtPrice.getText().trim());
-            if(price <= 0){
+            if (price <= 0) {
                 JOptionPane.showMessageDialog(this, "Harga harus lebih besar dari 0!");
                 txtPrice.requestFocus();
                 return false;
             }
-            // Check if price is too large for database
-            if(price > 9999999999.99) { // Adjust based on your database column type
-                JOptionPane.showMessageDialog(this, "Harga terlalu besar! Maksimal 9,999,999,999.99");
-                txtPrice.requestFocus();
-                return false;
-            }
-        }catch(NumberFormatException e){
-            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan format seperti '1200000', '1.200.000', '1,2jt', atau '100rb'", 
-                    "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan angka tanpa titik/koma.");
             txtPrice.requestFocus();
             return false;
         }
@@ -346,22 +375,48 @@ public class RoomCRUDPanel extends JPanel {
 
     private void loadRoomData() {
         tableModel.setRowCount(0);
-        try(Connection conn = DatabaseConnection.getConnection()){
-            String sql = "SELECT * FROM rooms ORDER BY room_number";
+        String filter = (String) cbFilterStatus.getSelectedItem();
+        int totalRooms = 0;
+        int countAvailable = 0;
+        int countOccupied = 0;
+        int countMaintenance = 0;
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT * FROM rooms";
+            if (filter != null && !filter.equals("Semua")) {
+                sql += " WHERE status = ?";
+            }
+            sql += " ORDER BY room_number";
             PreparedStatement pstmt = conn.prepareStatement(sql);
+            if (filter != null && !filter.equals("Semua")) {
+                pstmt.setString(1, filter);
+            }
             ResultSet rs = pstmt.executeQuery();
-            while(rs.next()){
-                Object[] row={
+            while (rs.next()) {
+                totalRooms++;
+                String status = rs.getString("status");
+                if ("Tersedia".equalsIgnoreCase(status)) countAvailable++;
+                else if ("Terisi".equalsIgnoreCase(status)) countOccupied++;
+                else if ("Maintenance".equalsIgnoreCase(status)) countMaintenance++;
+
+                Object[] row = {
                         rs.getInt("id"),
                         rs.getString("room_number"),
                         rs.getString("room_type"),
-                        rs.getString("status"),
+                        status,
                         rupiahFormat.format(rs.getDouble("price")),
                         rs.getString("description")
                 };
                 tableModel.addRow(row);
             }
-        }catch(SQLException e){
+
+            // Set label jumlah kamar
+            lblTotalRooms.setText("Total Kamar: " + totalRooms);
+            lblAvailableRooms.setText("Tersedia: " + countAvailable);
+            lblOccupiedRooms.setText("Terisi: " + countOccupied);
+            lblMaintenanceRooms.setText("Maintenance: " + countMaintenance);
+
+        } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal memuat data kamar: " + e.getMessage(),
                     "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -370,68 +425,29 @@ public class RoomCRUDPanel extends JPanel {
 
     private void loadSelectedRoom() {
         int selectedRow = roomTable.getSelectedRow();
-        if(selectedRow >= 0){
-            selectedRoomId = (Integer) tableModel.getValueAt(selectedRow,0);
-            txtRoomNumber.setText((String) tableModel.getValueAt(selectedRow,1));
-            txtRoomType.setText((String) tableModel.getValueAt(selectedRow,2));
-            cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow,3));
-            String priceStr = (String) tableModel.getValueAt(selectedRow,4);
+        if (selectedRow >= 0) {
+            selectedRoomId = (Integer) tableModel.getValueAt(selectedRow, 0);
+            txtRoomNumber.setText((String) tableModel.getValueAt(selectedRow, 1));
+            txtRoomType.setText((String) tableModel.getValueAt(selectedRow, 2));
+            cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 3));
+            String priceStr = (String) tableModel.getValueAt(selectedRow, 4);
             String cleanPrice = priceStr.replaceAll("[^\\d]", "");
             txtPrice.setText(cleanPrice);
-            txtDescription.setText((String) tableModel.getValueAt(selectedRow,5));
+            txtDescription.setText((String) tableModel.getValueAt(selectedRow, 5));
         }
     }
 
     private double parseFromRupiah(String rupiahString) {
-        if (rupiahString == null || rupiahString.trim().isEmpty()) {
-            return 0.0;
-        }
-        
-        String lowerCaseString = rupiahString.toLowerCase().trim();
-        
+        String cleanString = rupiahString.replaceAll("[^\\d]", "");
         try {
-            // Handle formats with "juta" or "jt"
-            if (lowerCaseString.contains("juta") || lowerCaseString.contains("jt")) {
-                // Extract the number part
-                String numberPart = lowerCaseString.replaceAll("juta|jt", "").trim();
-                // Replace comma with dot for decimal parsing
-                numberPart = numberPart.replace(",", ".");
-                double jutaValue = Double.parseDouble(numberPart);
-                return jutaValue * 1000000; // 1 juta = 1,000,000
-            } 
-            // Handle formats with "ribu" or "rb"
-            else if (lowerCaseString.contains("ribu") || lowerCaseString.contains("rb")) {
-                // Extract the number part
-                String numberPart = lowerCaseString.replaceAll("ribu|rb", "").trim();
-                // Replace comma with dot for decimal parsing
-                numberPart = numberPart.replace(",", ".");
-                double ribuValue = Double.parseDouble(numberPart);
-                return ribuValue * 1000; // 1 ribu = 1,000
-            }
-            // Standard format without words
-            else {
-                // Remove all non-digit characters except decimal point
-                String cleanString = rupiahString.replaceAll("[^\\d.]", "");
-                if (cleanString.isEmpty()) {
-                    return 0.0;
-                }
-                // Handle multiple decimal points (just take the first one)
-                if (cleanString.chars().filter(ch -> ch == '.').count() > 1) {
-                    int firstDotIndex = cleanString.indexOf('.');
-                    cleanString = cleanString.substring(0, firstDotIndex) + 
-                                 cleanString.substring(firstDotIndex + 1).replaceAll("\\.", "");
-                }
-                return Double.parseDouble(cleanString);
-            }
+            return Double.parseDouble(cleanString);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan format seperti '1200000', '1.200.000', '1,2jt', atau '100rb'", 
-                    "Error", JOptionPane.ERROR_MESSAGE);
             return 0.0;
         }
     }
 
     private boolean insertRoom(Room room) {
-        try(Connection conn = DatabaseConnection.getConnection()){
+        try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "INSERT INTO rooms (room_number, room_type, status, price, description) VALUES (?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, room.getRoomNumber());
@@ -442,15 +458,15 @@ public class RoomCRUDPanel extends JPanel {
 
             int result = pstmt.executeUpdate();
             return result > 0;
-        }catch(SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: "+ e.getMessage(),"Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
 
     private boolean updateRoomInDB(Room room) {
-        try(Connection conn = DatabaseConnection.getConnection()){
+        try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "UPDATE rooms SET room_number=?, room_type=?, status=?, price=?, description=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, room.getRoomNumber());
@@ -462,24 +478,24 @@ public class RoomCRUDPanel extends JPanel {
 
             int result = pstmt.executeUpdate();
             return result > 0;
-        }catch(SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: "+ e.getMessage(),"Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
 
     private boolean deleteRoomFromDB(int id) {
-        try(Connection conn = DatabaseConnection.getConnection()){
+        try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "DELETE FROM rooms WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1,id);
+            pstmt.setInt(1, id);
 
             int result = pstmt.executeUpdate();
             return result > 0;
-        }catch(SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: "+ e.getMessage(),"Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
