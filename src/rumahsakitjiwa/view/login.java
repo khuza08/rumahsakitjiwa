@@ -288,7 +288,7 @@ public class login extends JFrame {
         // Database connection info
         gbc.gridy = 4;
         JLabel infoLabel = new JLabel("<html><div style='text-align:center;color:rgba(255,255,255,0.7);font-size:10px;'>" +
-                "Silakan login menggunakan akun database Anda</div></html>");
+                "Silakan login menggunakan akun anda</div></html>");
         infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         rightPanel.add(infoLabel, gbc);
 

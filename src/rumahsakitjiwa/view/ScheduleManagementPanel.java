@@ -9,6 +9,7 @@ import java.time.DayOfWeek;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import java.util.Date;
+import java.text.SimpleDateFormat;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SpinnerNumberModel;
 import rumahsakitjiwa.database.DatabaseConnection;
@@ -27,6 +28,7 @@ public class ScheduleManagementPanel extends JPanel {
     private int selectedScheduleId = -1;
     private Dashboard dashboard; // Referensi ke Dashboard
     private boolean isFirstLoad = true; // Flag untuk mencegah pemilihan otomatis saat pertama kali
+    private SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a");
     
     public ScheduleManagementPanel() {
         initComponents();
@@ -72,14 +74,14 @@ public class ScheduleManagementPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
         formPanel.add(new JLabel("Jam Mulai:"), gbc);
         spStartTime = new JSpinner(new SpinnerDateModel());
-        spStartTime.setEditor(new JSpinner.DateEditor(spStartTime, "HH:mm"));
+        spStartTime.setEditor(new JSpinner.DateEditor(spStartTime, "hh:mm a"));
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(spStartTime, gbc);
         
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
         formPanel.add(new JLabel("Jam Selesai:"), gbc);
         spEndTime = new JSpinner(new SpinnerDateModel());
-        spEndTime.setEditor(new JSpinner.DateEditor(spEndTime, "HH:mm"));
+        spEndTime.setEditor(new JSpinner.DateEditor(spEndTime, "hh:mm a"));
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(spEndTime, gbc);
         
@@ -156,15 +158,18 @@ public class ScheduleManagementPanel extends JPanel {
         cbDoctors.setSelectedIndex(-1);
         cbDaysOfWeek.setSelectedIndex(-1);
         
-        // Set default times
+        // Set default times - 9:00 AM and 10:00 PM
         Date now = new Date();
+        
+        // Set start time to 9:00 AM
         Date startTime = new Date();
-        startTime.setHours(8);
+        startTime.setHours(9);
         startTime.setMinutes(0);
         spStartTime.setValue(startTime);
         
+        // Set end time to 10:00 PM
         Date endTime = new Date();
-        endTime.setHours(9);
+        endTime.setHours(22); // 22:00 is 10:00 PM in 24-hour format
         endTime.setMinutes(0);
         spEndTime.setValue(endTime);
         
@@ -200,12 +205,16 @@ public class ScheduleManagementPanel extends JPanel {
             ResultSet rs = pstmt.executeQuery();
             
             while (rs.next()) {
+                // Format times to display in AM/PM format
+                Time startTime = rs.getTime("start_time");
+                Time endTime = rs.getTime("end_time");
+                
                 Object[] row = {
                     rs.getInt("id"),
                     rs.getString("full_name"),
                     rs.getString("day_of_week"),
-                    rs.getTime("start_time").toString(),
-                    rs.getTime("end_time").toString(),
+                    timeFormat.format(startTime),
+                    timeFormat.format(endTime),
                     rs.getString("location"),
                     rs.getInt("max_patients"),
                     rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif"
@@ -242,23 +251,23 @@ public class ScheduleManagementPanel extends JPanel {
             String day = (String) tableModel.getValueAt(selectedRow, 2);
             cbDaysOfWeek.setSelectedItem(day);
             
-            // Set times
+            // Parse times from AM/PM format to 24-hour format for spinner
             String startTimeStr = (String) tableModel.getValueAt(selectedRow, 3);
             String endTimeStr = (String) tableModel.getValueAt(selectedRow, 4);
             
-            // Parse time strings (HH:MM:SS)
-            String[] startParts = startTimeStr.split(":");
-            String[] endParts = endTimeStr.split(":");
-            
-            Date startTime = new Date();
-            startTime.setHours(Integer.parseInt(startParts[0]));
-            startTime.setMinutes(Integer.parseInt(startParts[1]));
-            spStartTime.setValue(startTime);
-            
-            Date endTime = new Date();
-            endTime.setHours(Integer.parseInt(endParts[0]));
-            endTime.setMinutes(Integer.parseInt(endParts[1]));
-            spEndTime.setValue(endTime);
+            try {
+                // Parse AM/PM format
+                Date startTime = timeFormat.parse(startTimeStr);
+                Date endTime = timeFormat.parse(endTimeStr);
+                
+                spStartTime.setValue(startTime);
+                spEndTime.setValue(endTime);
+            } catch (Exception e) {
+                e.printStackTrace();
+                // Fallback to current time if parsing fails
+                spStartTime.setValue(new Date());
+                spEndTime.setValue(new Date());
+            }
             
             // Set location
             txtLocation.setText((String) tableModel.getValueAt(selectedRow, 5));
@@ -286,7 +295,7 @@ public class ScheduleManagementPanel extends JPanel {
                 Date startTime = (Date) spStartTime.getValue();
                 Date endTime = (Date) spEndTime.getValue();
                 
-                // Format times to HH:MM:SS
+                // Format times to HH:MM:SS for database storage
                 java.sql.Time sqlStartTime = new java.sql.Time(startTime.getHours(), startTime.getMinutes(), 0);
                 java.sql.Time sqlEndTime = new java.sql.Time(endTime.getHours(), endTime.getMinutes(), 0);
                 
@@ -342,7 +351,7 @@ public class ScheduleManagementPanel extends JPanel {
                 Date startTime = (Date) spStartTime.getValue();
                 Date endTime = (Date) spEndTime.getValue();
                 
-                // Format times to HH:MM:SS
+                // Format times to HH:MM:SS for database storage
                 java.sql.Time sqlStartTime = new java.sql.Time(startTime.getHours(), startTime.getMinutes(), 0);
                 java.sql.Time sqlEndTime = new java.sql.Time(endTime.getHours(), endTime.getMinutes(), 0);
                 
