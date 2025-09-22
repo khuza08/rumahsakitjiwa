@@ -471,6 +471,9 @@ public class DoctorCRUDPanel extends JPanel {
 
                 if (updateDoctorInDB(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil diupdate!");
+                    if (dashboard != null) {
+                    dashboard.refreshDashboard();  // Refresh dashboard here
+                    }
                     // Refresh specializations combo box
                     String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
                     cbFilterSpecialization.removeAllItems();

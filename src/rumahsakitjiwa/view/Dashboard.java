@@ -13,7 +13,7 @@ public class Dashboard extends JPanel {
         addDashboardStats();
 
         // Auto refresh dashboard every 10 seconds (10000 ms)
-        Timer refreshTimer = new Timer(10000, e -> refreshDashboard());
+        Timer refreshTimer = new Timer(256, e -> refreshDashboard());
         refreshTimer.start();
     }
 
