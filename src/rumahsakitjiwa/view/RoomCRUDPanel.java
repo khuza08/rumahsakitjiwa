@@ -100,6 +100,7 @@ public class RoomCRUDPanel extends JPanel {
         gbc.gridy = 4;
         formPanel.add(new JLabel("Harga/Hari:"), gbc);
         txtPrice = new JTextField(15);
+        txtPrice.setToolTipText("Contoh: 1200000, 1.200.000, 1,2jt, atau 100rb");
         gbc.gridx = 1;
         formPanel.add(txtPrice, gbc);
 
@@ -365,8 +366,15 @@ public class RoomCRUDPanel extends JPanel {
                 txtPrice.requestFocus();
                 return false;
             }
+            // Check if price is too large for database
+            if (price > 9999999999.99) { // Adjust based on your database column type
+                JOptionPane.showMessageDialog(this, "Harga terlalu besar! Maksimal 9,999,999,999.99");
+                txtPrice.requestFocus();
+                return false;
+            }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan angka tanpa titik/koma.");
+            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan format seperti '1200000', '1.200.000', '1,2jt', atau '100rb'", 
+                    "Error", JOptionPane.ERROR_MESSAGE);
             txtPrice.requestFocus();
             return false;
         }
@@ -438,11 +446,48 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private double parseFromRupiah(String rupiahString) {
-        String cleanString = rupiahString.replaceAll("[^\\d]", "");
-        try {
-            return Double.parseDouble(cleanString);
-        } catch (NumberFormatException e) {
+        if (rupiahString == null || rupiahString.trim().isEmpty()) {
             return 0.0;
+        }
+        
+        String lowerCaseString = rupiahString.toLowerCase().trim();
+        
+        try {
+            // Handle formats with "juta" or "jt"
+            if (lowerCaseString.contains("juta") || lowerCaseString.contains("jt")) {
+                // Extract the number part
+                String numberPart = lowerCaseString.replaceAll("juta|jt", "").trim();
+                // Replace comma with dot for decimal parsing
+                numberPart = numberPart.replace(",", ".");
+                double jutaValue = Double.parseDouble(numberPart);
+                return jutaValue * 1000000; // 1 juta = 1,000,000
+            } 
+            // Handle formats with "ribu" or "rb"
+            else if (lowerCaseString.contains("ribu") || lowerCaseString.contains("rb")) {
+                // Extract the number part
+                String numberPart = lowerCaseString.replaceAll("ribu|rb", "").trim();
+                // Replace comma with dot for decimal parsing
+                numberPart = numberPart.replace(",", ".");
+                double ribuValue = Double.parseDouble(numberPart);
+                return ribuValue * 1000; // 1 ribu = 1,000
+            }
+            // Standard format without words
+            else {
+                // Remove all non-digit characters except decimal point
+                String cleanString = rupiahString.replaceAll("[^\\d.]", "");
+                if (cleanString.isEmpty()) {
+                    return 0.0;
+                }
+                // Handle multiple decimal points (just take the first one)
+                if (cleanString.chars().filter(ch -> ch == '.').count() > 1) {
+                    int firstDotIndex = cleanString.indexOf('.');
+                    cleanString = cleanString.substring(0, firstDotIndex) + 
+                                 cleanString.substring(firstDotIndex + 1).replaceAll("\\.", "");
+                }
+                return Double.parseDouble(cleanString);
+            }
+        } catch (NumberFormatException e) {
+            throw new NumberFormatException("Format harga tidak valid! Gunakan format seperti '1200000', '1.200.000', '1,2jt', atau '100rb'");
         }
     }
 
