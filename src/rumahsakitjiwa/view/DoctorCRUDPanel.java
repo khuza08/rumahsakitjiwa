@@ -196,7 +196,7 @@ public class DoctorCRUDPanel extends JPanel {
         tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        // Create filter panel dengan tata letak yang lebih lebar
+        // Create filter panel
         JPanel filterPanel = new JPanel(new GridBagLayout());
         filterPanel.setOpaque(false);
         filterPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
@@ -471,9 +471,6 @@ public class DoctorCRUDPanel extends JPanel {
 
                 if (updateDoctorInDB(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil diupdate!");
-                    if (dashboard != null) {
-                    dashboard.refreshDashboard();  // Refresh dashboard here
-                    }
                     // Refresh specializations combo box
                     String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
                     cbFilterSpecialization.removeAllItems();
@@ -612,30 +609,8 @@ public class DoctorCRUDPanel extends JPanel {
     }
 
     private void loadDoctorData() {
-        tableModel.setRowCount(0);
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT * FROM doctors ORDER BY doctor_code";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                Object[] row = {
-                    rs.getInt("id"),
-                    rs.getString("doctor_code"),
-                    rs.getString("full_name"),
-                    rs.getString("specialization"),
-                    rs.getString("phone"),
-                    rs.getString("email"),
-                    rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif",
-                    rs.getString("schedule")
-                };
-                tableModel.addRow(row);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memuat data dokter: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
-        }
+        // Panggil applyFilter untuk memuat data awal dengan filter default
+        applyFilter();
     }
 
     private boolean insertDoctor(Doctor doctor) {
