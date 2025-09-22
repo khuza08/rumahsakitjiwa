@@ -11,6 +11,10 @@ public class Dashboard extends JPanel {
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         addDashboardStats();
+
+        // Auto refresh dashboard every 10 seconds (10000 ms)
+        Timer refreshTimer = new Timer(10000, e -> refreshDashboard());
+        refreshTimer.start();
     }
 
     public void refreshDashboard() {
@@ -23,10 +27,11 @@ public class Dashboard extends JPanel {
     private void addDashboardStats() {
         RoomStatistics roomStats = getRoomStatistics();
         int totalPatients = getTotalPatients();
+        int patientsToday = getPatientsToday();
         int activeDoctors = getActiveDoctors();
 
         add(createStatCard("Total Pasien", String.valueOf(totalPatients), new Color(0x4CAF50)));
-        add(createStatCard("Pasien Hari Ini", "12", new Color(0x2196F3)));
+        add(createStatCard("Pasien Hari Ini", String.valueOf(patientsToday), new Color(0x2196F3)));
         add(createStatCard("Dokter Aktif", String.valueOf(activeDoctors), new Color(0xFF9800)));
         add(createStatCard("Total Kamar", String.valueOf(roomStats.totalRooms), new Color(0x9C27B0)));
         add(createStatCard("Kamar Tersedia", String.valueOf(roomStats.availableRooms), new Color(0x00BCD4)));
@@ -103,6 +108,22 @@ public class Dashboard extends JPanel {
             }
         }catch(SQLException e){
             System.err.println("Error getting patient count: "+e.getMessage());
+        }
+        return 0;
+    }
+
+    // New method to count patients registered today
+    private int getPatientsToday() {
+        try(Connection conn = DatabaseConnection.getConnection()){
+            // Change 'created_at' to the actual date or timestamp column in your patients table
+            String sql = "SELECT COUNT(*) AS count FROM patients WHERE DATE(created_at) = CURDATE()";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if(rs.next()){
+                return rs.getInt("count");
+            }
+        }catch(SQLException e){
+            System.err.println("Error getting today's patient count: "+e.getMessage());
         }
         return 0;
     }
