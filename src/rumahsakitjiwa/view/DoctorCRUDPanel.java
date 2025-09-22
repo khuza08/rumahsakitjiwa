@@ -5,6 +5,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Doctor;
 
@@ -17,6 +19,10 @@ public class DoctorCRUDPanel extends JPanel {
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedDoctorId = -1;
     private Dashboard dashboard; // referensi ke dashboard
+    
+    // Komponen untuk filter
+    private JComboBox<String> cbFilterSpecialization;
+    private JComboBox<String> cbFilterStatus;
 
     public DoctorCRUDPanel() {
         initComponents();
@@ -190,6 +196,46 @@ public class DoctorCRUDPanel extends JPanel {
         tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
+        // Create filter panel dengan tata letak yang lebih lebar
+        JPanel filterPanel = new JPanel(new GridBagLayout());
+        filterPanel.setOpaque(false);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Spesialisasi filter
+        JLabel lblFilterSpecialization = new JLabel("Spesialisasi:");
+        cbFilterSpecialization = new JComboBox<>();
+        cbFilterSpecialization.addItem("Semua");
+        loadSpecializations();
+        
+        // Status filter
+        JLabel lblFilterStatus = new JLabel("Status:");
+        cbFilterStatus = new JComboBox<>(new String[]{"Semua", "Aktif", "Tidak Aktif"});
+        
+        // Tambahkan listener untuk filter otomatis
+        cbFilterSpecialization.addActionListener(e -> applyFilter());
+        cbFilterStatus.addActionListener(e -> applyFilter());
+        
+        // Atur tata letak filter
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.weightx = 0.1;
+        filterPanel.add(lblFilterSpecialization, gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.weightx = 0.4;
+        filterPanel.add(cbFilterSpecialization, gbc);
+        
+        gbc.gridx = 2; gbc.gridy = 0;
+        gbc.weightx = 0.1;
+        filterPanel.add(lblFilterStatus, gbc);
+        
+        gbc.gridx = 3; gbc.gridy = 0;
+        gbc.weightx = 0.4;
+        filterPanel.add(cbFilterStatus, gbc);
+        
         // Setup table
         String[] columns = {"ID", "Kode", "Nama Lengkap", "Spesialisasi", "Telepon", "Email", "Status", "Jadwal"};
         tableModel = new DefaultTableModel(columns, 0) {
@@ -226,9 +272,86 @@ public class DoctorCRUDPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(doctorTable);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
-        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Add components to table panel
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+        centerPanel.add(filterPanel, BorderLayout.NORTH);
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        tablePanel.add(centerPanel, BorderLayout.CENTER);
 
         return tablePanel;
+    }
+
+    private void loadSpecializations() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT DISTINCT specialization FROM doctors ORDER BY specialization";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String specialization = rs.getString("specialization");
+                if (specialization != null && !specialization.isEmpty()) {
+                    cbFilterSpecialization.addItem(specialization);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal memuat data spesialisasi: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void applyFilter() {
+        String selectedSpecialization = (String) cbFilterSpecialization.getSelectedItem();
+        String selectedStatus = (String) cbFilterStatus.getSelectedItem();
+        
+        tableModel.setRowCount(0);
+        
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM doctors WHERE 1=1");
+            List<Object> parameters = new ArrayList<>();
+            
+            if (selectedSpecialization != null && !selectedSpecialization.equals("Semua")) {
+                sql.append(" AND specialization = ?");
+                parameters.add(selectedSpecialization);
+            }
+            
+            if (selectedStatus != null && !selectedStatus.equals("Semua")) {
+                sql.append(" AND is_active = ?");
+                parameters.add(selectedStatus.equals("Aktif"));
+            }
+            
+            sql.append(" ORDER BY doctor_code");
+            
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+            
+            // Set parameters
+            for (int i = 0; i < parameters.size(); i++) {
+                pstmt.setObject(i + 1, parameters.get(i));
+            }
+            
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Object[] row = {
+                    rs.getInt("id"),
+                    rs.getString("doctor_code"),
+                    rs.getString("full_name"),
+                    rs.getString("specialization"),
+                    rs.getString("phone"),
+                    rs.getString("email"),
+                    rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif",
+                    rs.getString("schedule")
+                };
+                tableModel.addRow(row);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal memuat data dokter: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void setupTable() {
@@ -297,7 +420,18 @@ public class DoctorCRUDPanel extends JPanel {
 
                 if (insertDoctor(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil ditambahkan!");
-                    loadDoctorData();
+                    // Refresh specializations combo box
+                    String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
+                    cbFilterSpecialization.removeAllItems();
+                    cbFilterSpecialization.addItem("Semua");
+                    loadSpecializations();
+                    // Restore selection if possible
+                    if (currentSelection != null && !currentSelection.equals("Semua")) {
+                        cbFilterSpecialization.setSelectedItem(currentSelection);
+                    } else {
+                        cbFilterSpecialization.setSelectedIndex(0);
+                    }
+                    applyFilter(); // Apply current filter
                     clearForm();
                     // Refresh dashboard jika ada referensinya
                     if (dashboard != null) {
@@ -337,7 +471,18 @@ public class DoctorCRUDPanel extends JPanel {
 
                 if (updateDoctorInDB(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil diupdate!");
-                    loadDoctorData();
+                    // Refresh specializations combo box
+                    String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
+                    cbFilterSpecialization.removeAllItems();
+                    cbFilterSpecialization.addItem("Semua");
+                    loadSpecializations();
+                    // Restore selection if possible
+                    if (currentSelection != null && !currentSelection.equals("Semua")) {
+                        cbFilterSpecialization.setSelectedItem(currentSelection);
+                    } else {
+                        cbFilterSpecialization.setSelectedIndex(0);
+                    }
+                    applyFilter(); // Apply current filter
                     clearForm();
                     // Refresh dashboard jika ada referensinya
                     if (dashboard != null) {
@@ -365,7 +510,18 @@ public class DoctorCRUDPanel extends JPanel {
         if (confirm == JOptionPane.YES_OPTION) {
             if (deleteDoctorFromDB(selectedDoctorId)) {
                 JOptionPane.showMessageDialog(this, "Data dokter berhasil dihapus!");
-                loadDoctorData();
+                // Refresh specializations combo box
+                String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
+                cbFilterSpecialization.removeAllItems();
+                cbFilterSpecialization.addItem("Semua");
+                loadSpecializations();
+                // Restore selection if possible
+                if (currentSelection != null && !currentSelection.equals("Semua")) {
+                    cbFilterSpecialization.setSelectedItem(currentSelection);
+                } else {
+                    cbFilterSpecialization.setSelectedIndex(0);
+                }
+                applyFilter(); // Apply current filter
                 clearForm();
                 // Refresh dashboard jika ada referensinya
                 if (dashboard != null) {
