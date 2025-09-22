@@ -2,8 +2,13 @@ package rumahsakitjiwa.view;
 
 import javax.swing.*;
 import java.awt.*;
-import rumahsakitjiwa.database.DatabaseConnection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.sql.*;
+import java.time.DayOfWeek;
+import java.time.format.TextStyle;
+import java.util.Locale;
+import rumahsakitjiwa.database.DatabaseConnection;
 
 public class Dashboard extends JPanel {
     public Dashboard() {
@@ -13,7 +18,7 @@ public class Dashboard extends JPanel {
         addDashboardStats();
 
         // Auto refresh dashboard every 10 seconds (10000 ms)
-        Timer refreshTimer = new Timer(256, e -> refreshDashboard());
+        Timer refreshTimer = new Timer(10000, e -> refreshDashboard());
         refreshTimer.start();
     }
 
@@ -29,13 +34,14 @@ public class Dashboard extends JPanel {
         int totalPatients = getTotalPatients();
         int patientsToday = getPatientsToday();
         int activeDoctors = getActiveDoctors();
+        int schedulesToday = getSchedulesToday(); // Perbaiki typo
 
         add(createStatCard("Total Pasien", String.valueOf(totalPatients), new Color(0x4CAF50)));
         add(createStatCard("Pasien Hari Ini", String.valueOf(patientsToday), new Color(0x2196F3)));
         add(createStatCard("Dokter Aktif", String.valueOf(activeDoctors), new Color(0xFF9800)));
         add(createStatCard("Total Kamar", String.valueOf(roomStats.totalRooms), new Color(0x9C27B0)));
         add(createStatCard("Kamar Tersedia", String.valueOf(roomStats.availableRooms), new Color(0x00BCD4)));
-        add(createStatCard("Jadwal Hari Ini", "18", new Color(0xF44336)));
+        add(createStatCard("Jadwal Hari Ini", String.valueOf(schedulesToday), new Color(0xF44336)));
     }
 
     private JPanel createStatCard(String title, String value, Color color) {
@@ -138,6 +144,28 @@ public class Dashboard extends JPanel {
             }
         }catch(SQLException e){
             System.err.println("Error getting doctor count: "+e.getMessage());
+        }
+        return 0;
+    }
+    
+    private int getSchedulesToday() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // Mendapatkan nama hari ini dalam bahasa Indonesia
+            String today = java.time.LocalDate.now()
+                .getDayOfWeek()
+                .getDisplayName(java.time.format.TextStyle.FULL, new java.util.Locale("id", "ID"));
+            
+            String sql = "SELECT COUNT(*) AS count FROM schedules " +
+                         "WHERE day_of_week = ? AND is_active = TRUE";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, today);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt("count");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting today's schedule count: " + e.getMessage());
         }
         return 0;
     }

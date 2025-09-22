@@ -25,11 +25,18 @@ public class ScheduleManagementPanel extends JPanel {
     private JTable scheduleTable;
     private DefaultTableModel tableModel;
     private int selectedScheduleId = -1;
+    private Dashboard dashboard; // Referensi ke Dashboard
+    private boolean isFirstLoad = true; // Flag untuk mencegah pemilihan otomatis saat pertama kali
     
     public ScheduleManagementPanel() {
         initComponents();
         loadDoctors();
         loadSchedules();
+    }
+    
+    // Metode setter untuk Dashboard
+    public void setDashboard(Dashboard dashboard) {
+        this.dashboard = dashboard;
     }
     
     private void initComponents() {
@@ -130,7 +137,7 @@ public class ScheduleManagementPanel extends JPanel {
         scheduleTable = new JTable(tableModel);
         scheduleTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         scheduleTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && scheduleTable.getSelectedRow() != -1) {
+            if (!e.getValueIsAdjusting() && scheduleTable.getSelectedRow() != -1 && !isFirstLoad) {
                 loadSelectedSchedule();
             }
         });
@@ -140,6 +147,30 @@ public class ScheduleManagementPanel extends JPanel {
         // Add components to main panel
         add(formPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
+        
+        // Set default values for form
+        resetFormToDefault();
+    }
+    
+    private void resetFormToDefault() {
+        cbDoctors.setSelectedIndex(-1);
+        cbDaysOfWeek.setSelectedIndex(-1);
+        
+        // Set default times
+        Date now = new Date();
+        Date startTime = new Date();
+        startTime.setHours(8);
+        startTime.setMinutes(0);
+        spStartTime.setValue(startTime);
+        
+        Date endTime = new Date();
+        endTime.setHours(9);
+        endTime.setMinutes(0);
+        spEndTime.setValue(endTime);
+        
+        txtLocation.setText("");
+        spMaxPatients.setValue(10);
+        chkActive.setSelected(true);
     }
     
     private void loadDoctors() {
@@ -160,6 +191,7 @@ public class ScheduleManagementPanel extends JPanel {
     }
     
     private void loadSchedules() {
+        isFirstLoad = true; // Set flag untuk mencegah pemilihan otomatis
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT s.id, d.full_name, s.day_of_week, s.start_time, s.end_time, s.location, s.max_patients, s.is_active " +
@@ -185,6 +217,16 @@ public class ScheduleManagementPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Gagal memuat data jadwal: " + e.getMessage(), 
                     "Database Error", JOptionPane.ERROR_MESSAGE);
         }
+        
+        // Reset form ke nilai default setelah tabel dimuat
+        resetFormToDefault();
+        selectedScheduleId = -1;
+        
+        // Hapus selection pada tabel
+        scheduleTable.clearSelection();
+        
+        // Reset flag setelah tabel selesai dimuat
+        isFirstLoad = false;
     }
     
     private void loadSelectedSchedule() {
@@ -267,7 +309,10 @@ public class ScheduleManagementPanel extends JPanel {
                 if (insertSchedule(schedule)) {
                     JOptionPane.showMessageDialog(this, "Jadwal berhasil ditambahkan!");
                     loadSchedules();
-                    clearForm();
+                    // Refresh dashboard jika ada referensinya
+                    if (dashboard != null) {
+                        dashboard.refreshDashboard();
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Gagal menambah jadwal!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -321,7 +366,10 @@ public class ScheduleManagementPanel extends JPanel {
                 if (updateScheduleInDB(schedule)) {
                     JOptionPane.showMessageDialog(this, "Jadwal berhasil diupdate!");
                     loadSchedules();
-                    clearForm();
+                    // Refresh dashboard jika ada referensinya
+                    if (dashboard != null) {
+                        dashboard.refreshDashboard();
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this, "Gagal mengupdate jadwal!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -346,7 +394,10 @@ public class ScheduleManagementPanel extends JPanel {
             if (deleteScheduleFromDB(selectedScheduleId)) {
                 JOptionPane.showMessageDialog(this, "Jadwal berhasil dihapus!");
                 loadSchedules();
-                clearForm();
+                // Refresh dashboard jika ada referensinya
+                if (dashboard != null) {
+                    dashboard.refreshDashboard();
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Gagal menghapus jadwal!", "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -354,13 +405,7 @@ public class ScheduleManagementPanel extends JPanel {
     }
     
     private void clearForm() {
-        cbDoctors.setSelectedIndex(0);
-        cbDaysOfWeek.setSelectedIndex(0);
-        spStartTime.setValue(new Date());
-        spEndTime.setValue(new Date());
-        txtLocation.setText("");
-        spMaxPatients.setValue(10);
-        chkActive.setSelected(true);
+        resetFormToDefault();
         selectedScheduleId = -1;
         scheduleTable.clearSelection();
     }
