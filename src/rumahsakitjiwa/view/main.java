@@ -27,6 +27,7 @@ public class main extends JFrame {
     private Dashboard dashboardPanel;
     private RoomCRUDPanel roomCRUDPanel;
     private DoctorCRUDPanel doctorCRUDPanel;
+    private PasienCRUDPanel pasienCRUDPanel; // Tambahkan ini
     
     private String userRole;
     private String userName;
@@ -87,11 +88,13 @@ public class main extends JFrame {
         dashboardPanel = new Dashboard();
         roomCRUDPanel = new RoomCRUDPanel();
         doctorCRUDPanel = new DoctorCRUDPanel();
+        pasienCRUDPanel = new PasienCRUDPanel(); // Tambahkan ini
+        
         roomCRUDPanel.setDashboard(dashboardPanel);
         
         // Tambah panel ke card layout sesuai role
         contentPanel.add(dashboardPanel, "DASHBOARD");
-        contentPanel.add(createPatientPanel(), "PASIEN");
+        contentPanel.add(pasienCRUDPanel, "PASIEN"); // Ganti ini
         if ("admin".equals(userRole)) {
             contentPanel.add(doctorCRUDPanel, "DOKTER");
             contentPanel.add(roomCRUDPanel, "KAMAR");
@@ -250,11 +253,7 @@ public class main extends JFrame {
         return button;
     }
     
-    private JPanel createPatientPanel() {
-        return createContentPanel("Data Pasien", 
-            "Di sini akan ditampilkan daftar pasien, form tambah pasien baru,\n" +
-            "pencarian pasien, dan riwayat medis pasien.");
-    }
+    // Hapus metode createPatientPanel() karena sudah menggunakan PasienCRUDPanel
     
     private JPanel createDoctorPanel() {
         return createContentPanel("Data Dokter", 
