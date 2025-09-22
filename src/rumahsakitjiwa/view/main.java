@@ -27,7 +27,10 @@ public class main extends JFrame {
     private Dashboard dashboardPanel;
     private RoomCRUDPanel roomCRUDPanel;
     private DoctorCRUDPanel doctorCRUDPanel;
-    private PasienCRUDPanel pasienCRUDPanel; // Tambahkan ini
+    private PasienCRUDPanel pasienCRUDPanel;
+    private ScheduleManagementPanel scheduleManagementPanel;
+
+    
     
     private String userRole;
     private String userName;
@@ -89,6 +92,8 @@ public class main extends JFrame {
         roomCRUDPanel = new RoomCRUDPanel();
         doctorCRUDPanel = new DoctorCRUDPanel();
         pasienCRUDPanel = new PasienCRUDPanel(); // Tambahkan ini
+        scheduleManagementPanel = new ScheduleManagementPanel(); // Tambahkan ini
+
         
         roomCRUDPanel.setDashboard(dashboardPanel);
         
@@ -98,7 +103,7 @@ public class main extends JFrame {
         if ("admin".equals(userRole)) {
             contentPanel.add(doctorCRUDPanel, "DOKTER");
             contentPanel.add(roomCRUDPanel, "KAMAR");
-            contentPanel.add(createAppointmentPanel(), "JADWAL");
+            contentPanel.add(scheduleManagementPanel, "JADWAL"); // Ganti ini
             contentPanel.add(createReportPanel(), "LAPORAN");
             contentPanel.add(createSettingsPanel(), "PENGATURAN");
         } else {
@@ -106,7 +111,6 @@ public class main extends JFrame {
                 "Akses terbatas. Hubungi administrator untuk manajemen dokter."), "DOKTER");
             contentPanel.add(createContentPanel("Data Kamar",
                 "Akses terbatas. Hubungi administrator untuk manajemen kamar."), "KAMAR");
-            contentPanel.add(createAppointmentPanel(), "JADWAL");
             contentPanel.add(createContentPanel("Laporan",
                 "Akses terbatas. Hubungi administrator untuk laporan."), "LAPORAN");
             contentPanel.add(createContentPanel("Pengaturan",
@@ -261,11 +265,7 @@ public class main extends JFrame {
             "spesialisasi, dan informasi kontak dokter.");
     }
     
-    private JPanel createAppointmentPanel() {
-        return createContentPanel("Jadwal Konsultasi", 
-            "Di sini akan ditampilkan kalender jadwal, booking appointment,\n" +
-            "konfirmasi jadwal, dan reminder untuk pasien.");
-    }
+
     
     private JPanel createReportPanel() {
         return createContentPanel("Laporan", 
