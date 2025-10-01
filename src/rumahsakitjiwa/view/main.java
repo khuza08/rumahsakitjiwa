@@ -102,7 +102,6 @@ public class main extends JFrame {
             contentPanel.add(roomCRUDPanel, "KAMAR");
             contentPanel.add(scheduleManagementPanel, "JADWAL");
             contentPanel.add(reportPanel, "LAPORAN");
-            contentPanel.add(createSettingsPanel(), "PENGATURAN");
         } else {
             contentPanel.add(createContentPanel("Data Dokter",
                 "Akses terbatas. Hubungi administrator untuk manajemen dokter."), "DOKTER");
@@ -110,8 +109,6 @@ public class main extends JFrame {
                 "Akses terbatas. Hubungi administrator untuk manajemen kamar."), "KAMAR");
             contentPanel.add(createContentPanel("Laporan",
                 "Akses terbatas. Hubungi administrator untuk laporan."), "LAPORAN");
-            contentPanel.add(createContentPanel("Pengaturan",
-                "Akses terbatas. Hubungi administrator untuk pengaturan sistem."), "PENGATURAN");
         }
         
         JPanel centerPanel = new JPanel(new BorderLayout());
@@ -195,9 +192,9 @@ public class main extends JFrame {
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
         
         String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Data Kamar", 
-                              "Jadwal", "Laporan", "Pengaturan"};
+                              "Jadwal", "Laporan"};
         String[] menuKeys = {"DASHBOARD", "PASIEN", "DOKTER", "KAMAR", 
-                             "JADWAL", "LAPORAN", "PENGATURAN"};
+                             "JADWAL", "LAPORAN",};
         
         for (int i = 0; i < menuItems.length; i++) {
             final String menuKey = menuKeys[i];
@@ -205,7 +202,7 @@ public class main extends JFrame {
             
             if (!"admin".equals(userRole) && 
                 (menuKey.equals("DOKTER") || menuKey.equals("KAMAR") || 
-                 menuKey.equals("LAPORAN") || menuKey.equals("PENGATURAN"))) {
+                 menuKey.equals("LAPORAN"))) {
                 menuBtn.setBackground(new Color(100, 100, 100, 100));
                 menuBtn.setEnabled(false);
             } else {
@@ -265,11 +262,6 @@ public class main extends JFrame {
             "laporan keuangan, dan export data ke PDF/Excel.");
     }
     
-    private JPanel createSettingsPanel() {
-        return createContentPanel("Pengaturan", 
-            "Di sini akan ditampilkan pengaturan aplikasi,\n" +
-            "manajemen user, backup data, dan konfigurasi sistem.");
-    }
     
     private JPanel createContentPanel(String title, String description) {
         JPanel panel = new JPanel(new BorderLayout());
