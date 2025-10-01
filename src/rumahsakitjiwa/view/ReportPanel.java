@@ -15,9 +15,12 @@ public class ReportPanel extends JPanel {
     private JTabbedPane tabbedPane;
     private NumberFormat currencyFormat;
     private SimpleDateFormat dateFormat;
-    
+    private NumberFormat integerFormat; // Deklarasi
+
     public ReportPanel() {
         currencyFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        integerFormat = NumberFormat.getIntegerInstance(new Locale("id", "ID")); // Inisialisasi
+        integerFormat.setGroupingUsed(false); // Setelah diinisialisasi
         dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         
         setLayout(new BorderLayout());
@@ -461,8 +464,14 @@ public class ReportPanel extends JPanel {
         JComboBox<String> monthCombo = new JComboBox<>(months);
         monthCombo.setSelectedIndex(new Date().getMonth());
         
-        JSpinner yearSpinner = new JSpinner(new SpinnerNumberModel(2025, 2020, 2030, 1));
-        
+        // Gunakan tahun saat ini
+        int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        JSpinner yearSpinner = new JSpinner(new SpinnerNumberModel(currentYear, currentYear - 5, currentYear + 5, 1));
+
+        // Format spinner untuk menampilkan tanpa desimal
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(yearSpinner, "#");
+        yearSpinner.setEditor(editor);
+
         JButton refreshBtn = new JButton("Refresh");
         JButton exportBtn = new JButton("Export PDF");
         
@@ -636,64 +645,63 @@ public class ReportPanel extends JPanel {
         }
     }
     
-    private void loadMonthlyFinanceData(int month, int year, JPanel panel) {
-        JPanel summaryPanel = (JPanel) panel.getClientProperty("summaryPanel");
-        DefaultTableModel model = (DefaultTableModel) panel.getClientProperty("tableModel");
-        model.setRowCount(0);
+private void loadMonthlyFinanceData(int month, int year, JPanel panel) {
+    JPanel summaryPanel = (JPanel) panel.getClientProperty("summaryPanel");
+    DefaultTableModel model = (DefaultTableModel) panel.getClientProperty("tableModel");
+    model.setRowCount(0);
+    
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "SELECT " +
+                    "WEEK(created_at, 1) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at) - 1 DAY), 1) + 1 as week_num, " +
+                    "COUNT(*) as patient_count, " +
+                    "SUM(examination_fee + medicine_fee) as total_revenue, " +
+                    "SUM(examination_fee) as total_exam, " +
+                    "SUM(medicine_fee) as total_medicine " +
+                    "FROM patients " +
+                    "WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? " +
+                    "GROUP BY week_num ORDER BY week_num";
         
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            // Get weekly summary
-            String sql = "SELECT " +
-                        "WEEK(created_at, 1) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at) - 1 DAY), 1) + 1 as week_num, " +
-                        "COUNT(*) as patient_count, " +
-                        "SUM(examination_fee + medicine_fee) as total_revenue, " +
-                        "SUM(examination_fee) as total_exam, " +
-                        "SUM(medicine_fee) as total_medicine " +
-                        "FROM patients " +
-                        "WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? " +
-                        "GROUP BY week_num ORDER BY week_num";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setInt(1, month);
+        pstmt.setInt(2, year);
+        ResultSet rs = pstmt.executeQuery();
+        
+        double grandTotal = 0;
+        double totalExam = 0;
+        double totalMedicine = 0;
+        int totalPatients = 0;
+        
+        while (rs.next()) {
+            int weekNum = rs.getInt("week_num");
+            int patientCount = rs.getInt("patient_count");
+            double revenue = rs.getDouble("total_revenue");
+            double exam = rs.getDouble("total_exam");
+            double medicine = rs.getDouble("total_medicine");
             
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, month);
-            pstmt.setInt(2, year);
-            ResultSet rs = pstmt.executeQuery();
+            model.addRow(new Object[]{
+                "Minggu " + weekNum,
+                integerFormat.format(patientCount), // Gunakan integerFormat
+                currencyFormat.format(revenue),
+                currencyFormat.format(exam),
+                currencyFormat.format(medicine)
+            });
             
-            double grandTotal = 0;
-            double totalExam = 0;
-            double totalMedicine = 0;
-            int totalPatients = 0;
-            
-            while (rs.next()) {
-                int weekNum = rs.getInt("week_num");
-                int patientCount = rs.getInt("patient_count");
-                double revenue = rs.getDouble("total_revenue");
-                double exam = rs.getDouble("total_exam");
-                double medicine = rs.getDouble("total_medicine");
-                
-                model.addRow(new Object[]{
-                    "Minggu " + weekNum,
-                    patientCount,
-                    currencyFormat.format(revenue),
-                    currencyFormat.format(exam),
-                    currencyFormat.format(medicine)
-                });
-                
-                grandTotal += revenue;
-                totalExam += exam;
-                totalMedicine += medicine;
-                totalPatients += patientCount;
-            }
-            
-            updateSummaryCard(summaryPanel, 0, currencyFormat.format(grandTotal));
-            updateSummaryCard(summaryPanel, 1, currencyFormat.format(totalExam));
-            updateSummaryCard(summaryPanel, 2, currencyFormat.format(totalMedicine));
-            updateSummaryCard(summaryPanel, 3, String.valueOf(totalPatients));
-            
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error loading monthly finance data: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+            grandTotal += revenue;
+            totalExam += exam;
+            totalMedicine += medicine;
+            totalPatients += patientCount;
         }
+        
+        updateSummaryCard(summaryPanel, 0, currencyFormat.format(grandTotal));
+        updateSummaryCard(summaryPanel, 1, currencyFormat.format(totalExam));
+        updateSummaryCard(summaryPanel, 2, currencyFormat.format(totalMedicine));
+        updateSummaryCard(summaryPanel, 3, integerFormat.format(totalPatients)); // Gunakan integerFormat
+        
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error loading monthly finance data: " + e.getMessage(),
+            "Error", JOptionPane.ERROR_MESSAGE);
     }
+}
     
     // ==================== HELPER METHODS ====================
     private int calculateAge(Date birthDate) {
