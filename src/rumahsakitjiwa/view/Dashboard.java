@@ -2,12 +2,7 @@ package rumahsakitjiwa.view;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.*;
-import java.time.DayOfWeek;
-import java.time.format.TextStyle;
-import java.util.Locale;
 import rumahsakitjiwa.database.DatabaseConnection;
 
 public class Dashboard extends JPanel {
