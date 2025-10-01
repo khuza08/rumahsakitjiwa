@@ -29,8 +29,7 @@ public class main extends JFrame {
     private DoctorCRUDPanel doctorCRUDPanel;
     private PasienCRUDPanel pasienCRUDPanel;
     private ScheduleManagementPanel scheduleManagementPanel;
-
-    
+    private ReportPanel reportPanel;
     
     private String userRole;
     private String userName;
@@ -52,7 +51,6 @@ public class main extends JFrame {
         setLayout(new BorderLayout());
         setBackground(new Color(0, 0, 0, 0));
 
-        // Ambil info user dari login (harus sesuai implementasi kelas login)
         try {
             userRole = login.currentUserRole;
             userName = login.currentFullName;
@@ -87,24 +85,23 @@ public class main extends JFrame {
         contentPanel = new JPanel(cardLayout);
         contentPanel.setOpaque(false);
 
-        // Instance panel utama
         dashboardPanel = new Dashboard();
         roomCRUDPanel = new RoomCRUDPanel();
         doctorCRUDPanel = new DoctorCRUDPanel();
-        pasienCRUDPanel = new PasienCRUDPanel(); // Tambahkan ini
-        scheduleManagementPanel = new ScheduleManagementPanel(); // Tambahkan ini
-
+        pasienCRUDPanel = new PasienCRUDPanel();
+        scheduleManagementPanel = new ScheduleManagementPanel();
+        reportPanel = new ReportPanel();
         
         roomCRUDPanel.setDashboard(dashboardPanel);
         
-        // Tambah panel ke card layout sesuai role
         contentPanel.add(dashboardPanel, "DASHBOARD");
-        contentPanel.add(pasienCRUDPanel, "PASIEN"); // Ganti ini
+        contentPanel.add(pasienCRUDPanel, "PASIEN");
+        
         if ("admin".equals(userRole)) {
             contentPanel.add(doctorCRUDPanel, "DOKTER");
             contentPanel.add(roomCRUDPanel, "KAMAR");
-            contentPanel.add(scheduleManagementPanel, "JADWAL"); // Ganti ini
-            contentPanel.add(createReportPanel(), "LAPORAN");
+            contentPanel.add(scheduleManagementPanel, "JADWAL");
+            contentPanel.add(reportPanel, "LAPORAN");
             contentPanel.add(createSettingsPanel(), "PENGATURAN");
         } else {
             contentPanel.add(createContentPanel("Data Dokter",
@@ -206,7 +203,6 @@ public class main extends JFrame {
             final String menuKey = menuKeys[i];
             JButton menuBtn = createMenuButton(menuItems[i]);
             
-            // Non-admin disable certain buttons
             if (!"admin".equals(userRole) && 
                 (menuKey.equals("DOKTER") || menuKey.equals("KAMAR") || 
                  menuKey.equals("LAPORAN") || menuKey.equals("PENGATURAN"))) {
@@ -257,15 +253,11 @@ public class main extends JFrame {
         return button;
     }
     
-    // Hapus metode createPatientPanel() karena sudah menggunakan PasienCRUDPanel
-    
     private JPanel createDoctorPanel() {
         return createContentPanel("Data Dokter", 
             "Di sini akan ditampilkan daftar dokter, jadwal praktek,\n" +
             "spesialisasi, dan informasi kontak dokter.");
     }
-    
-
     
     private JPanel createReportPanel() {
         return createContentPanel("Laporan", 
