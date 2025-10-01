@@ -250,19 +250,6 @@ public class main extends JFrame {
         return button;
     }
     
-    private JPanel createDoctorPanel() {
-        return createContentPanel("Data Dokter", 
-            "Di sini akan ditampilkan daftar dokter, jadwal praktek,\n" +
-            "spesialisasi, dan informasi kontak dokter.");
-    }
-    
-    private JPanel createReportPanel() {
-        return createContentPanel("Laporan", 
-            "Di sini akan ditampilkan laporan statistik pasien,\n" +
-            "laporan keuangan, dan export data ke PDF/Excel.");
-    }
-    
-    
     private JPanel createContentPanel(String title, String description) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
