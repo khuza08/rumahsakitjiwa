@@ -31,9 +31,6 @@ public class ReportPanel extends JPanel {
     }
     
     private void initializeComponents() {
-        // Header Panel
-        JPanel headerPanel = createHeaderPanel();
-        
         // Tabbed Pane for different reports
         tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Segoe UI", Font.PLAIN, 13));
@@ -45,29 +42,7 @@ public class ReportPanel extends JPanel {
         tabbedPane.addTab("Laporan Rawat Inap", createInpatientReportPanel());
         tabbedPane.addTab("Laporan Bulanan", createMonthlyReportPanel());
         
-        add(headerPanel, BorderLayout.NORTH);
         add(tabbedPane, BorderLayout.CENTER);
-    }
-    
-    private JPanel createHeaderPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
-        panel.setPreferredSize(new Dimension(getWidth(), 40)); // Tetapkan tinggi header
-
-        
-        JLabel titleLabel = new JLabel("Laporan Sistem");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
-        
-        JLabel dateLabel = new JLabel("Tanggal: " + new SimpleDateFormat("dd MMMM yyyy").format(new Date()));
-        dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        dateLabel.setForeground(new Color(255, 255, 255, 200));
-        
-        panel.add(titleLabel, BorderLayout.WEST);
-        panel.add(dateLabel, BorderLayout.EAST);
-        
-        return panel;
     }
     
     // ==================== LAPORAN KEUANGAN ====================
@@ -645,63 +620,63 @@ public class ReportPanel extends JPanel {
         }
     }
     
-private void loadMonthlyFinanceData(int month, int year, JPanel panel) {
-    JPanel summaryPanel = (JPanel) panel.getClientProperty("summaryPanel");
-    DefaultTableModel model = (DefaultTableModel) panel.getClientProperty("tableModel");
-    model.setRowCount(0);
-    
-    try (Connection conn = DatabaseConnection.getConnection()) {
-        String sql = "SELECT " +
-                    "WEEK(created_at, 1) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at) - 1 DAY), 1) + 1 as week_num, " +
-                    "COUNT(*) as patient_count, " +
-                    "SUM(examination_fee + medicine_fee) as total_revenue, " +
-                    "SUM(examination_fee) as total_exam, " +
-                    "SUM(medicine_fee) as total_medicine " +
-                    "FROM patients " +
-                    "WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? " +
-                    "GROUP BY week_num ORDER BY week_num";
+    private void loadMonthlyFinanceData(int month, int year, JPanel panel) {
+        JPanel summaryPanel = (JPanel) panel.getClientProperty("summaryPanel");
+        DefaultTableModel model = (DefaultTableModel) panel.getClientProperty("tableModel");
+        model.setRowCount(0);
         
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        pstmt.setInt(1, month);
-        pstmt.setInt(2, year);
-        ResultSet rs = pstmt.executeQuery();
-        
-        double grandTotal = 0;
-        double totalExam = 0;
-        double totalMedicine = 0;
-        int totalPatients = 0;
-        
-        while (rs.next()) {
-            int weekNum = rs.getInt("week_num");
-            int patientCount = rs.getInt("patient_count");
-            double revenue = rs.getDouble("total_revenue");
-            double exam = rs.getDouble("total_exam");
-            double medicine = rs.getDouble("total_medicine");
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT " +
+                        "WEEK(created_at, 1) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at) - 1 DAY), 1) + 1 as week_num, " +
+                        "COUNT(*) as patient_count, " +
+                        "SUM(examination_fee + medicine_fee) as total_revenue, " +
+                        "SUM(examination_fee) as total_exam, " +
+                        "SUM(medicine_fee) as total_medicine " +
+                        "FROM patients " +
+                        "WHERE MONTH(created_at) = ? AND YEAR(created_at) = ? " +
+                        "GROUP BY week_num ORDER BY week_num";
             
-            model.addRow(new Object[]{
-                "Minggu " + weekNum,
-                integerFormat.format(patientCount), // Gunakan integerFormat
-                currencyFormat.format(revenue),
-                currencyFormat.format(exam),
-                currencyFormat.format(medicine)
-            });
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, month);
+            pstmt.setInt(2, year);
+            ResultSet rs = pstmt.executeQuery();
             
-            grandTotal += revenue;
-            totalExam += exam;
-            totalMedicine += medicine;
-            totalPatients += patientCount;
+            double grandTotal = 0;
+            double totalExam = 0;
+            double totalMedicine = 0;
+            int totalPatients = 0;
+            
+            while (rs.next()) {
+                int weekNum = rs.getInt("week_num");
+                int patientCount = rs.getInt("patient_count");
+                double revenue = rs.getDouble("total_revenue");
+                double exam = rs.getDouble("total_exam");
+                double medicine = rs.getDouble("total_medicine");
+                
+                model.addRow(new Object[]{
+                    "Minggu " + weekNum,
+                    integerFormat.format(patientCount), // Gunakan integerFormat
+                    currencyFormat.format(revenue),
+                    currencyFormat.format(exam),
+                    currencyFormat.format(medicine)
+                });
+                
+                grandTotal += revenue;
+                totalExam += exam;
+                totalMedicine += medicine;
+                totalPatients += patientCount;
+            }
+            
+            updateSummaryCard(summaryPanel, 0, currencyFormat.format(grandTotal));
+            updateSummaryCard(summaryPanel, 1, currencyFormat.format(totalExam));
+            updateSummaryCard(summaryPanel, 2, currencyFormat.format(totalMedicine));
+            updateSummaryCard(summaryPanel, 3, integerFormat.format(totalPatients)); // Gunakan integerFormat
+            
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error loading monthly finance data: " + e.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
-        
-        updateSummaryCard(summaryPanel, 0, currencyFormat.format(grandTotal));
-        updateSummaryCard(summaryPanel, 1, currencyFormat.format(totalExam));
-        updateSummaryCard(summaryPanel, 2, currencyFormat.format(totalMedicine));
-        updateSummaryCard(summaryPanel, 3, integerFormat.format(totalPatients)); // Gunakan integerFormat
-        
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error loading monthly finance data: " + e.getMessage(),
-            "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
     
     // ==================== HELPER METHODS ====================
     private int calculateAge(Date birthDate) {
