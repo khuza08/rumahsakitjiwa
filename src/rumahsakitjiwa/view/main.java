@@ -31,6 +31,11 @@ public class main extends JFrame {
     private ScheduleManagementPanel scheduleManagementPanel;
     private ReportPanel reportPanel;
     
+    // Panel untuk resepsionis
+    private RegistrationPanel registrationPanel;
+    private AppointmentPanel appointmentPanel;
+    private QueuePanel queuePanel;
+    
     private String userRole;
     private String userName;
     
@@ -44,7 +49,7 @@ public class main extends JFrame {
         }
         
         setUndecorated(true);
-        setTitle("Dashboard - Rumah Sakit Jiwa");
+        setTitle("Sistem Resepsionis - Rumah Sakit Jiwa");
         setSize(1200, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -86,28 +91,41 @@ public class main extends JFrame {
         contentPanel.setOpaque(false);
 
         dashboardPanel = new Dashboard();
-        roomCRUDPanel = new RoomCRUDPanel();
-        doctorCRUDPanel = new DoctorCRUDPanel();
         pasienCRUDPanel = new PasienCRUDPanel();
-        scheduleManagementPanel = new ScheduleManagementPanel();
-        reportPanel = new ReportPanel();
         
-        roomCRUDPanel.setDashboard(dashboardPanel);
-        
+        // Tambahkan panel untuk semua role
         contentPanel.add(dashboardPanel, "DASHBOARD");
         contentPanel.add(pasienCRUDPanel, "PASIEN");
         
+        // Tambahkan panel berdasarkan role
         if ("admin".equals(userRole)) {
+            // Admin: akses penuh
+            roomCRUDPanel = new RoomCRUDPanel();
+            doctorCRUDPanel = new DoctorCRUDPanel();
+            scheduleManagementPanel = new ScheduleManagementPanel();
+            reportPanel = new ReportPanel();
+            
+            roomCRUDPanel.setDashboard(dashboardPanel);
+            
             contentPanel.add(doctorCRUDPanel, "DOKTER");
             contentPanel.add(roomCRUDPanel, "KAMAR");
             contentPanel.add(scheduleManagementPanel, "JADWAL");
             contentPanel.add(reportPanel, "LAPORAN");
-        } else {
-            contentPanel.add(createContentPanel("Data Dokter",
+            
+        } else if ("resepsionis".equals(userRole)) {
+            // Resepsionis: fokus pada pendaftaran dan penjadwalan
+            registrationPanel = new RegistrationPanel();
+            appointmentPanel = new AppointmentPanel();
+            queuePanel = new QueuePanel();
+            
+            contentPanel.add(registrationPanel, "PENDAFTARAN");
+            contentPanel.add(appointmentPanel, "JADWAL");
+            contentPanel.add(queuePanel, "ANTRIAN");
+            contentPanel.add(createContentPanel("Data Dokter", 
                 "Akses terbatas. Hubungi administrator untuk manajemen dokter."), "DOKTER");
-            contentPanel.add(createContentPanel("Data Kamar",
+            contentPanel.add(createContentPanel("Data Kamar", 
                 "Akses terbatas. Hubungi administrator untuk manajemen kamar."), "KAMAR");
-            contentPanel.add(createContentPanel("Laporan",
+            contentPanel.add(createContentPanel("Laporan", 
                 "Akses terbatas. Hubungi administrator untuk laporan."), "LAPORAN");
         }
         
@@ -120,59 +138,6 @@ public class main extends JFrame {
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         
         add(mainPanel, BorderLayout.CENTER);
-    }
-    
-    private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setOpaque(false);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 15, 10, 15));
-        
-        JPanel macOSPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        macOSPanel.setOpaque(false);
-        
-        JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
-        JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
-        JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
-        
-        closeBtn.addActionListener(e -> animateClose());
-        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
-        maximizeBtn.addActionListener(e -> {
-            if (isMaximized) animateRestore();
-            else animateMaximize();
-        });
-        
-        macOSPanel.add(closeBtn);
-        macOSPanel.add(minimizeBtn);
-        macOSPanel.add(maximizeBtn);
-        
-        JLabel titleLabel = new JLabel("Sistem Informasi Rumah Sakit Jiwa", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        titleLabel.setForeground(Color.WHITE);
-        
-        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 0, 2));
-        infoPanel.setOpaque(false);
-        
-        JLabel userLabel = new JLabel(userName + " (" + userRole.toUpperCase() + ")", SwingConstants.RIGHT);
-        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 10));
-        userLabel.setForeground(new Color(255, 255, 255, 180));
-        
-        timeLabel = new JLabel("", SwingConstants.RIGHT);
-        timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        timeLabel.setForeground(Color.WHITE);
-        
-        dateLabel = new JLabel("", SwingConstants.RIGHT);
-        dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        dateLabel.setForeground(new Color(255, 255, 255, 200));
-        
-        infoPanel.add(userLabel);
-        infoPanel.add(timeLabel);
-        infoPanel.add(dateLabel);
-        
-        headerPanel.add(macOSPanel, BorderLayout.WEST);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-        headerPanel.add(infoPanel, BorderLayout.EAST);
-        
-        return headerPanel;
     }
     
     private JPanel createSidebarPanel() {
@@ -191,25 +156,34 @@ public class main extends JFrame {
         sidebarPanel.setOpaque(false);
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
         
-        String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Data Kamar", 
-                              "Jadwal", "Laporan"};
-        String[] menuKeys = {"DASHBOARD", "PASIEN", "DOKTER", "KAMAR", 
-                             "JADWAL", "LAPORAN",};
-        
-        for (int i = 0; i < menuItems.length; i++) {
-            final String menuKey = menuKeys[i];
-            JButton menuBtn = createMenuButton(menuItems[i]);
+        // Menu berdasarkan role
+        if ("admin".equals(userRole)) {
+            // Menu untuk admin
+            String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Data Kamar", 
+                                  "Jadwal", "Laporan"};
+            String[] menuKeys = {"DASHBOARD", "PASIEN", "DOKTER", "KAMAR", 
+                                 "JADWAL", "LAPORAN"};
             
-            if (!"admin".equals(userRole) && 
-                (menuKey.equals("DOKTER") || menuKey.equals("KAMAR") || 
-                 menuKey.equals("LAPORAN"))) {
-                menuBtn.setBackground(new Color(100, 100, 100, 100));
-                menuBtn.setEnabled(false);
-            } else {
+            for (int i = 0; i < menuItems.length; i++) {
+                final String menuKey = menuKeys[i];
+                JButton menuBtn = createMenuButton(menuItems[i]);
                 menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
+                sidebarPanel.add(menuBtn);
+                sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
             }
-            sidebarPanel.add(menuBtn);
-            sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+            
+        } else if ("resepsionis".equals(userRole)) {
+            // Menu untuk resepsionis
+            String[] menuItems = {"Dashboard", "Data Pasien", "Pendaftaran Baru", "Jadwal Konsultasi", "Antrian Pasien"};
+            String[] menuKeys = {"DASHBOARD", "PASIEN", "PENDAFTARAN", "JADWAL", "ANTRIAN"};
+            
+            for (int i = 0; i < menuItems.length; i++) {
+                final String menuKey = menuKeys[i];
+                JButton menuBtn = createMenuButton(menuItems[i]);
+                menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
+                sidebarPanel.add(menuBtn);
+                sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+            }
         }
         
         sidebarPanel.add(Box.createVerticalGlue());
@@ -356,6 +330,59 @@ public class main extends JFrame {
             }
         });
         return button;
+    }
+    
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 15, 10, 15));
+        
+        JPanel macOSPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        macOSPanel.setOpaque(false);
+        
+        JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
+        JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
+        JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
+        
+        closeBtn.addActionListener(e -> animateClose());
+        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
+        maximizeBtn.addActionListener(e -> {
+            if (isMaximized) animateRestore();
+            else animateMaximize();
+        });
+        
+        macOSPanel.add(closeBtn);
+        macOSPanel.add(minimizeBtn);
+        macOSPanel.add(maximizeBtn);
+        
+        JLabel titleLabel = new JLabel("Sistem Resepsionis - Rumah Sakit Jiwa", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(Color.WHITE);
+        
+        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 0, 2));
+        infoPanel.setOpaque(false);
+        
+        JLabel userLabel = new JLabel(userName + " (" + userRole.toUpperCase() + ")", SwingConstants.RIGHT);
+        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        userLabel.setForeground(new Color(255, 255, 255, 180));
+        
+        timeLabel = new JLabel("", SwingConstants.RIGHT);
+        timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        timeLabel.setForeground(Color.WHITE);
+        
+        dateLabel = new JLabel("", SwingConstants.RIGHT);
+        dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        dateLabel.setForeground(new Color(255, 255, 255, 200));
+        
+        infoPanel.add(userLabel);
+        infoPanel.add(timeLabel);
+        infoPanel.add(dateLabel);
+        
+        headerPanel.add(macOSPanel, BorderLayout.WEST);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        headerPanel.add(infoPanel, BorderLayout.EAST);
+        
+        return headerPanel;
     }
     
     private void animateClose() {
@@ -551,7 +578,7 @@ public class main extends JFrame {
         panel.add(createStatCard("Dokter Aktif", String.valueOf(activeDoctors), new Color(0xFF9800)));
         panel.add(createStatCard("Total Kamar", String.valueOf(stats.totalRooms), new Color(0x9C27B0)));
         panel.add(createStatCard("Kamar Tersedia", String.valueOf(stats.availableRooms), new Color(0x00BCD4)));
-        panel.add(createStatCard("Jadwal Hari Ini", "18", new Color(0xF44336)));
+        panel.add(createStatCard("Antrian Hari Ini", "18", new Color(0xF44336)));
         
         return panel;
     }
@@ -584,6 +611,79 @@ public class main extends JFrame {
         card.add(valueLabel, BorderLayout.CENTER);
         
         return card;
+    }
+    
+    // Panel-panel untuk resepsionis
+    private class RegistrationPanel extends JPanel {
+        public RegistrationPanel() {
+            setLayout(new BorderLayout());
+            setBackground(new Color(255, 255, 255, 230));
+            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            JLabel titleLabel = new JLabel("Pendaftaran Pasien Baru", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            add(titleLabel, BorderLayout.NORTH);
+            
+            JTextArea infoArea = new JTextArea(
+                "Panel ini digunakan untuk mendaftarkan pasien baru.\n\n" +
+                "Fitur yang tersedia:\n" +
+                "- Input data pasien baru\n" +
+                "- Pilih jenis kunjungan (rawat jalan/rawat inap)\n" +
+                "- Pilih dokter yang dituju\n" +
+                "- Generate nomor antrian"
+            );
+            infoArea.setEditable(false);
+            infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            add(new JScrollPane(infoArea), BorderLayout.CENTER);
+        }
+    }
+    
+    private class AppointmentPanel extends JPanel {
+        public AppointmentPanel() {
+            setLayout(new BorderLayout());
+            setBackground(new Color(255, 255, 255, 230));
+            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            JLabel titleLabel = new JLabel("Penjadwalan Konsultasi", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            add(titleLabel, BorderLayout.NORTH);
+            
+            JTextArea infoArea = new JTextArea(
+                "Panel ini digunakan untuk mengelola jadwal konsultasi.\n\n" +
+                "Fitur yang tersedia:\n" +
+                "- Lihat jadwal dokter tersedia\n" +
+                "- Booking janji temu\n" +
+                "- Reschedule janji temu\n" +
+                "- Batalkan janji temu"
+            );
+            infoArea.setEditable(false);
+            infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            add(new JScrollPane(infoArea), BorderLayout.CENTER);
+        }
+    }
+    
+    private class QueuePanel extends JPanel {
+        public QueuePanel() {
+            setLayout(new BorderLayout());
+            setBackground(new Color(255, 255, 255, 230));
+            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            JLabel titleLabel = new JLabel("Manajemen Antrian", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            add(titleLabel, BorderLayout.NORTH);
+            
+            JTextArea infoArea = new JTextArea(
+                "Panel ini digunakan untuk mengelola antrian pasien.\n\n" +
+                "Fitur yang tersedia:\n" +
+                "- Lihat antrian aktif\n" +
+                "- Panggil nomor antrian\n" +
+                "- Lihat estimasi waktu tunggu\n" +
+                "- Monitoring antrian per poli"
+            );
+            infoArea.setEditable(false);
+            infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            add(new JScrollPane(infoArea), BorderLayout.CENTER);
+        }
     }
     
     public static void main(String[] args) {
