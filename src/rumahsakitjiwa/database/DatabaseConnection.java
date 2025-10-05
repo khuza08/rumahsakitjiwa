@@ -6,9 +6,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseConnection {
-    private static final String URL = "jdbc:mysql://localhost:3306/rumah_sakit_jiwa";
+    private static final String URL = "jdbc:mysql://localhost:3306/rumahsakitjiwa";
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "huzamewing";
+    private static final String PASSWORD = "Asifppnk08";
 
     // Method untuk mendapatkan koneksi database
     public static Connection getConnection() throws SQLException {
@@ -30,7 +30,7 @@ public class DatabaseConnection {
             
             // Buat database jika belum ada
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS rumah_sakit_jiwa");
-            System.out.println("Database 'rumah_sakit_jiwa' siap digunakan.");
+            System.out.println("Database 'rumahsakitjiwa' siap digunakan.");
             
             conn.close();
             
