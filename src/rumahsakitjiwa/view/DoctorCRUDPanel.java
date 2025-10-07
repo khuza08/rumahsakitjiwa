@@ -138,8 +138,6 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(cbActive, gbc);
 
-        // === Jadwal dihapus ===
-
         JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         buttonPanel.setOpaque(false);
 
@@ -158,7 +156,7 @@ public class DoctorCRUDPanel extends JPanel {
         buttonPanel.add(btnDelete);
         buttonPanel.add(btnClear);
 
-        gbc.gridx = 0; gbc.gridy = 7; // ↓ turun karena jadwal dihapus
+        gbc.gridx = 0; gbc.gridy = 7;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
@@ -220,7 +218,6 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.weightx = 0.4;
         filterPanel.add(cbFilterStatus, gbc);
         
-        // === Kolom jadwal dihapus ===
         String[] columns = {"ID", "Kode", "Nama Lengkap", "Spesialisasi", "Telepon", "Email", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -323,7 +320,6 @@ public class DoctorCRUDPanel extends JPanel {
                     rs.getString("phone"),
                     rs.getString("email"),
                     rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif"
-                    // schedule dihapus
                 };
                 tableModel.addRow(row);
             }
@@ -381,6 +377,12 @@ public class DoctorCRUDPanel extends JPanel {
     }
 
     private void addDoctor() {
+        // ✅ Generate kode dokter otomatis jika kosong
+        if (txtDoctorCode.getText().trim().isEmpty()) {
+            String nextCode = generateNextDoctorCode();
+            txtDoctorCode.setText(nextCode);
+        }
+
         if (validateInput()) {
             try {
                 Doctor doctor = new Doctor();
@@ -390,7 +392,6 @@ public class DoctorCRUDPanel extends JPanel {
                 doctor.setPhone(txtPhone.getText().trim());
                 doctor.setEmail(txtEmail.getText().trim());
                 doctor.setActive(cbActive.getSelectedIndex() == 0);
-                // schedule dihapus
 
                 if (insertDoctor(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil ditambahkan!");
@@ -433,7 +434,6 @@ public class DoctorCRUDPanel extends JPanel {
                 doctor.setPhone(txtPhone.getText().trim());
                 doctor.setEmail(txtEmail.getText().trim());
                 doctor.setActive(cbActive.getSelectedIndex() == 0);
-                // schedule dihapus
 
                 if (updateDoctorInDB(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil diupdate!");
@@ -500,17 +500,12 @@ public class DoctorCRUDPanel extends JPanel {
         txtPhone.setText("");
         txtEmail.setText("");
         cbActive.setSelectedIndex(0);
-        // Jadwal dihapus
         selectedDoctorId = -1;
         doctorTable.clearSelection();
     }
 
     private boolean validateInput() {
-        if (txtDoctorCode.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Kode Dokter tidak boleh kosong!");
-            txtDoctorCode.requestFocus();
-            return false;
-        }
+        // Kode dokter bisa otomatis, jadi tidak wajib diisi manual
         if (txtFullName.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Nama Lengkap tidak boleh kosong!");
             txtFullName.requestFocus();
@@ -526,7 +521,6 @@ public class DoctorCRUDPanel extends JPanel {
             txtEmail.requestFocus();
             return false;
         }
-        // ✅ Validasi email lebih ketat
         if (!EMAIL_PATTERN.matcher(txtEmail.getText().trim()).matches()) {
             JOptionPane.showMessageDialog(this, "Format email tidak valid!");
             txtEmail.requestFocus();
@@ -560,7 +554,6 @@ public class DoctorCRUDPanel extends JPanel {
             
             String status = (String) tableModel.getValueAt(selectedRow, 6);
             cbActive.setSelectedIndex(status.equals("Aktif") ? 0 : 1);
-            // Jadwal dihapus
         }
     }
 
@@ -570,7 +563,6 @@ public class DoctorCRUDPanel extends JPanel {
 
     private boolean insertDoctor(Doctor doctor) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // ✅ schedule dihapus dari query
             String sql = "INSERT INTO doctors (doctor_code, full_name, specialization, phone, email, is_active) VALUES (?, ?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, doctor.getDoctorCode());
@@ -591,7 +583,6 @@ public class DoctorCRUDPanel extends JPanel {
 
     private boolean updateDoctorInDB(Doctor doctor) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // ✅ schedule dihapus dari query
             String sql = "UPDATE doctors SET doctor_code=?, full_name=?, specialization=?, phone=?, email=?, is_active=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, doctor.getDoctorCode());
@@ -623,6 +614,32 @@ public class DoctorCRUDPanel extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
+        }
+    }
+
+    // ✅ Method untuk generate kode dokter otomatis
+    private String generateNextDoctorCode() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT MAX(doctor_code) as max_code FROM doctors";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                String maxCode = rs.getString("max_code");
+                if (maxCode != null && maxCode.startsWith("DOK")) {
+                    // Ambil angka setelah DOK
+                    String numPart = maxCode.substring(3); // DOK001 -> 001
+                    int nextNum = Integer.parseInt(numPart) + 1;
+                    return String.format("DOK%03d", nextNum); // DOK002, DOK003, ...
+                }
+            }
+            // Jika tidak ada data, mulai dari DOK001
+            return "DOK001";
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal generate kode dokter: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+            return "DOK001"; // fallback
         }
     }
 }
