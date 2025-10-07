@@ -3,6 +3,9 @@ package rumahsakitjiwa.view;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,11 +21,29 @@ public class DoctorCRUDPanel extends JPanel {
     private JTextArea txtSchedule;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedDoctorId = -1;
-    private Dashboard dashboard; // referensi ke dashboard
+    private Dashboard dashboard;
     
-    // Komponen untuk filter
     private JComboBox<String> cbFilterSpecialization;
     private JComboBox<String> cbFilterStatus;
+
+    // --- Inner class untuk input angka saja ---
+    private static class NumericDocument extends PlainDocument {
+        private final int maxLength;
+
+        public NumericDocument(int maxLength) {
+            this.maxLength = maxLength;
+        }
+
+        @Override
+        public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
+            if (str == null) return;
+            String currentText = getText(0, getLength());
+            String newText = currentText.substring(0, offs) + str + currentText.substring(offs);
+            if (newText.matches("\\d+") && newText.length() <= maxLength) {
+                super.insertString(offs, str, a);
+            }
+        }
+    }
 
     public DoctorCRUDPanel() {
         initComponents();
@@ -30,7 +51,6 @@ public class DoctorCRUDPanel extends JPanel {
         loadDoctorData();
     }
 
-    // Method untuk set referensi dashboard
     public void setDashboard(Dashboard dashboard) {
         this.dashboard = dashboard;
     }
@@ -40,10 +60,7 @@ public class DoctorCRUDPanel extends JPanel {
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Form Panel (Kiri)
         JPanel formPanel = createFormPanel();
-
-        // Table Panel (Kanan)
         JPanel tablePanel = createTablePanel();
 
         add(formPanel, BorderLayout.WEST);
@@ -70,57 +87,51 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Title
         JLabel titleLabel = new JLabel("Form Data Dokter");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(new Color(0x6da395));
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         formPanel.add(titleLabel, gbc);
 
-        // Doctor Code
         gbc.gridwidth = 1;
+
         gbc.gridx = 0; gbc.gridy = 1;
         formPanel.add(new JLabel("Kode Dokter:"), gbc);
         txtDoctorCode = new JTextField(15);
         gbc.gridx = 1;
         formPanel.add(txtDoctorCode, gbc);
 
-        // Full Name
         gbc.gridx = 0; gbc.gridy = 2;
         formPanel.add(new JLabel("Nama Lengkap:"), gbc);
         txtFullName = new JTextField(15);
         gbc.gridx = 1;
         formPanel.add(txtFullName, gbc);
 
-        // Specialization
         gbc.gridx = 0; gbc.gridy = 3;
         formPanel.add(new JLabel("Spesialisasi:"), gbc);
         txtSpecialization = new JTextField(15);
         gbc.gridx = 1;
         formPanel.add(txtSpecialization, gbc);
 
-        // Phone
         gbc.gridx = 0; gbc.gridy = 4;
         formPanel.add(new JLabel("No. Telepon:"), gbc);
         txtPhone = new JTextField(15);
+        txtPhone.setDocument(new NumericDocument(13)); // ✅ hanya angka, max 13
         gbc.gridx = 1;
         formPanel.add(txtPhone, gbc);
 
-        // Email
         gbc.gridx = 0; gbc.gridy = 5;
         formPanel.add(new JLabel("Email:"), gbc);
         txtEmail = new JTextField(15);
         gbc.gridx = 1;
         formPanel.add(txtEmail, gbc);
 
-        // Active Status
         gbc.gridx = 0; gbc.gridy = 6;
         formPanel.add(new JLabel("Status:"), gbc);
         cbActive = new JComboBox<>(new String[]{"Aktif", "Tidak Aktif"});
         gbc.gridx = 1;
         formPanel.add(cbActive, gbc);
 
-        // Schedule
         gbc.gridx = 0; gbc.gridy = 7;
         formPanel.add(new JLabel("Jadwal Praktek:"), gbc);
         txtSchedule = new JTextArea(3, 15);
@@ -129,7 +140,6 @@ public class DoctorCRUDPanel extends JPanel {
         txtSchedule.setText("Contoh: Senin-Jumat 08:00-16:00");
         txtSchedule.setForeground(Color.GRAY);
         
-        // Add placeholder behavior
         txtSchedule.addFocusListener(new java.awt.event.FocusListener() {
             @Override
             public void focusGained(java.awt.event.FocusEvent e) {
@@ -151,7 +161,6 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(scrollPane, gbc);
 
-        // Buttons Panel
         JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         buttonPanel.setOpaque(false);
 
@@ -196,7 +205,6 @@ public class DoctorCRUDPanel extends JPanel {
         tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        // Create filter panel
         JPanel filterPanel = new JPanel(new GridBagLayout());
         filterPanel.setOpaque(false);
         filterPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
@@ -205,21 +213,17 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         
-        // Spesialisasi filter
         JLabel lblFilterSpecialization = new JLabel("Spesialisasi:");
         cbFilterSpecialization = new JComboBox<>();
         cbFilterSpecialization.addItem("Semua");
         loadSpecializations();
         
-        // Status filter
         JLabel lblFilterStatus = new JLabel("Status:");
         cbFilterStatus = new JComboBox<>(new String[]{"Semua", "Aktif", "Tidak Aktif"});
         
-        // Tambahkan listener untuk filter otomatis
         cbFilterSpecialization.addActionListener(e -> applyFilter());
         cbFilterStatus.addActionListener(e -> applyFilter());
         
-        // Atur tata letak filter
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.weightx = 0.1;
         filterPanel.add(lblFilterSpecialization, gbc);
@@ -236,7 +240,6 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.weightx = 0.4;
         filterPanel.add(cbFilterStatus, gbc);
         
-        // Setup table
         String[] columns = {"ID", "Kode", "Nama Lengkap", "Spesialisasi", "Telepon", "Email", "Status", "Jadwal"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -253,7 +256,6 @@ public class DoctorCRUDPanel extends JPanel {
             }
         });
 
-        // Style table
         JTableHeader header = doctorTable.getTableHeader();
         header.setBackground(new Color(0x96A78D));
         header.setForeground(Color.WHITE);
@@ -264,8 +266,7 @@ public class DoctorCRUDPanel extends JPanel {
         doctorTable.setGridColor(new Color(200, 200, 200));
         doctorTable.setSelectionBackground(new Color(0x6da395));
 
-        // Set column widths
-        doctorTable.getColumnModel().getColumn(0).setMaxWidth(0); // Hide ID
+        doctorTable.getColumnModel().getColumn(0).setMaxWidth(0);
         doctorTable.getColumnModel().getColumn(0).setMinWidth(0);
         doctorTable.getColumnModel().getColumn(0).setPreferredWidth(0);
 
@@ -273,7 +274,6 @@ public class DoctorCRUDPanel extends JPanel {
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         
-        // Add components to table panel
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
         centerPanel.add(filterPanel, BorderLayout.NORTH);
@@ -327,7 +327,6 @@ public class DoctorCRUDPanel extends JPanel {
             
             PreparedStatement pstmt = conn.prepareStatement(sql.toString());
             
-            // Set parameters
             for (int i = 0; i < parameters.size(); i++) {
                 pstmt.setObject(i + 1, parameters.get(i));
             }
@@ -355,7 +354,6 @@ public class DoctorCRUDPanel extends JPanel {
     }
 
     private void setupTable() {
-        // Hide ID column
         doctorTable.getColumnModel().getColumn(0).setMinWidth(0);
         doctorTable.getColumnModel().getColumn(0).setMaxWidth(0);
         doctorTable.getColumnModel().getColumn(0).setPreferredWidth(0);
@@ -420,20 +418,17 @@ public class DoctorCRUDPanel extends JPanel {
 
                 if (insertDoctor(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil ditambahkan!");
-                    // Refresh specializations combo box
                     String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
                     cbFilterSpecialization.removeAllItems();
                     cbFilterSpecialization.addItem("Semua");
                     loadSpecializations();
-                    // Restore selection if possible
                     if (currentSelection != null && !currentSelection.equals("Semua")) {
                         cbFilterSpecialization.setSelectedItem(currentSelection);
                     } else {
                         cbFilterSpecialization.setSelectedIndex(0);
                     }
-                    applyFilter(); // Apply current filter
+                    applyFilter();
                     clearForm();
-                    // Refresh dashboard jika ada referensinya
                     if (dashboard != null) {
                         dashboard.refreshDashboard();
                     }
@@ -471,20 +466,17 @@ public class DoctorCRUDPanel extends JPanel {
 
                 if (updateDoctorInDB(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil diupdate!");
-                    // Refresh specializations combo box
                     String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
                     cbFilterSpecialization.removeAllItems();
                     cbFilterSpecialization.addItem("Semua");
                     loadSpecializations();
-                    // Restore selection if possible
                     if (currentSelection != null && !currentSelection.equals("Semua")) {
                         cbFilterSpecialization.setSelectedItem(currentSelection);
                     } else {
                         cbFilterSpecialization.setSelectedIndex(0);
                     }
-                    applyFilter(); // Apply current filter
+                    applyFilter();
                     clearForm();
-                    // Refresh dashboard jika ada referensinya
                     if (dashboard != null) {
                         dashboard.refreshDashboard();
                     }
@@ -510,20 +502,17 @@ public class DoctorCRUDPanel extends JPanel {
         if (confirm == JOptionPane.YES_OPTION) {
             if (deleteDoctorFromDB(selectedDoctorId)) {
                 JOptionPane.showMessageDialog(this, "Data dokter berhasil dihapus!");
-                // Refresh specializations combo box
                 String currentSelection = (String) cbFilterSpecialization.getSelectedItem();
                 cbFilterSpecialization.removeAllItems();
                 cbFilterSpecialization.addItem("Semua");
                 loadSpecializations();
-                // Restore selection if possible
                 if (currentSelection != null && !currentSelection.equals("Semua")) {
                     cbFilterSpecialization.setSelectedItem(currentSelection);
                 } else {
                     cbFilterSpecialization.setSelectedIndex(0);
                 }
-                applyFilter(); // Apply current filter
+                applyFilter();
                 clearForm();
-                // Refresh dashboard jika ada referensinya
                 if (dashboard != null) {
                     dashboard.refreshDashboard();
                 }
@@ -562,25 +551,30 @@ public class DoctorCRUDPanel extends JPanel {
             txtSpecialization.requestFocus();
             return false;
         }
-        if (txtPhone.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No. Telepon tidak boleh kosong!");
-            txtPhone.requestFocus();
-            return false;
-        }
         if (txtEmail.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Email tidak boleh kosong!");
             txtEmail.requestFocus();
             return false;
         }
-        
-        // Validate email format
-        String email = txtEmail.getText().trim();
-        if (!email.contains("@") || !email.contains(".")) {
+        if (!txtEmail.getText().trim().contains("@") || !txtEmail.getText().trim().contains(".")) {
             JOptionPane.showMessageDialog(this, "Format email tidak valid!");
             txtEmail.requestFocus();
             return false;
         }
-        
+
+        // ✅ Validasi telepon: 10–13 digit angka
+        String phone = txtPhone.getText().trim();
+        if (phone.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No. Telepon tidak boleh kosong!");
+            txtPhone.requestFocus();
+            return false;
+        }
+        if (!phone.matches("\\d{10,13}")) {
+            JOptionPane.showMessageDialog(this, "No. Telepon harus 10–13 digit angka tanpa spasi atau simbol!");
+            txtPhone.requestFocus();
+            return false;
+        }
+
         return true;
     }
 
@@ -609,7 +603,6 @@ public class DoctorCRUDPanel extends JPanel {
     }
 
     private void loadDoctorData() {
-        // Panggil applyFilter untuk memuat data awal dengan filter default
         applyFilter();
     }
 
