@@ -10,6 +10,7 @@ import java.awt.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Doctor;
 
@@ -18,7 +19,6 @@ public class DoctorCRUDPanel extends JPanel {
     private JTable doctorTable;
     private JTextField txtDoctorCode, txtFullName, txtSpecialization, txtPhone, txtEmail;
     private JComboBox<String> cbActive;
-    private JTextArea txtSchedule;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedDoctorId = -1;
     private Dashboard dashboard;
@@ -44,6 +44,12 @@ public class DoctorCRUDPanel extends JPanel {
             }
         }
     }
+
+    // --- Validasi email dengan regex ---
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+        "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@" +
+        "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
+    );
 
     public DoctorCRUDPanel() {
         initComponents();
@@ -116,7 +122,7 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 4;
         formPanel.add(new JLabel("No. Telepon:"), gbc);
         txtPhone = new JTextField(15);
-        txtPhone.setDocument(new NumericDocument(13)); // ✅ hanya angka, max 13
+        txtPhone.setDocument(new NumericDocument(13));
         gbc.gridx = 1;
         formPanel.add(txtPhone, gbc);
 
@@ -132,34 +138,7 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(cbActive, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 7;
-        formPanel.add(new JLabel("Jadwal Praktek:"), gbc);
-        txtSchedule = new JTextArea(3, 15);
-        txtSchedule.setLineWrap(true);
-        txtSchedule.setWrapStyleWord(true);
-        txtSchedule.setText("Contoh: Senin-Jumat 08:00-16:00");
-        txtSchedule.setForeground(Color.GRAY);
-        
-        txtSchedule.addFocusListener(new java.awt.event.FocusListener() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent e) {
-                if (txtSchedule.getText().equals("Contoh: Senin-Jumat 08:00-16:00")) {
-                    txtSchedule.setText("");
-                    txtSchedule.setForeground(Color.BLACK);
-                }
-            }
-            @Override
-            public void focusLost(java.awt.event.FocusEvent e) {
-                if (txtSchedule.getText().trim().isEmpty()) {
-                    txtSchedule.setText("Contoh: Senin-Jumat 08:00-16:00");
-                    txtSchedule.setForeground(Color.GRAY);
-                }
-            }
-        });
-        
-        JScrollPane scrollPane = new JScrollPane(txtSchedule);
-        gbc.gridx = 1;
-        formPanel.add(scrollPane, gbc);
+        // === Jadwal dihapus ===
 
         JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         buttonPanel.setOpaque(false);
@@ -179,7 +158,8 @@ public class DoctorCRUDPanel extends JPanel {
         buttonPanel.add(btnDelete);
         buttonPanel.add(btnClear);
 
-        gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 7; // ↓ turun karena jadwal dihapus
+        gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
 
@@ -240,7 +220,8 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.weightx = 0.4;
         filterPanel.add(cbFilterStatus, gbc);
         
-        String[] columns = {"ID", "Kode", "Nama Lengkap", "Spesialisasi", "Telepon", "Email", "Status", "Jadwal"};
+        // === Kolom jadwal dihapus ===
+        String[] columns = {"ID", "Kode", "Nama Lengkap", "Spesialisasi", "Telepon", "Email", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -341,8 +322,8 @@ public class DoctorCRUDPanel extends JPanel {
                     rs.getString("specialization"),
                     rs.getString("phone"),
                     rs.getString("email"),
-                    rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif",
-                    rs.getString("schedule")
+                    rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif"
+                    // schedule dihapus
                 };
                 tableModel.addRow(row);
             }
@@ -409,12 +390,7 @@ public class DoctorCRUDPanel extends JPanel {
                 doctor.setPhone(txtPhone.getText().trim());
                 doctor.setEmail(txtEmail.getText().trim());
                 doctor.setActive(cbActive.getSelectedIndex() == 0);
-                
-                String schedule = txtSchedule.getText().trim();
-                if (schedule.equals("Contoh: Senin-Jumat 08:00-16:00")) {
-                    schedule = "";
-                }
-                doctor.setSchedule(schedule);
+                // schedule dihapus
 
                 if (insertDoctor(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil ditambahkan!");
@@ -457,12 +433,7 @@ public class DoctorCRUDPanel extends JPanel {
                 doctor.setPhone(txtPhone.getText().trim());
                 doctor.setEmail(txtEmail.getText().trim());
                 doctor.setActive(cbActive.getSelectedIndex() == 0);
-                
-                String schedule = txtSchedule.getText().trim();
-                if (schedule.equals("Contoh: Senin-Jumat 08:00-16:00")) {
-                    schedule = "";
-                }
-                doctor.setSchedule(schedule);
+                // schedule dihapus
 
                 if (updateDoctorInDB(doctor)) {
                     JOptionPane.showMessageDialog(this, "Data dokter berhasil diupdate!");
@@ -529,8 +500,7 @@ public class DoctorCRUDPanel extends JPanel {
         txtPhone.setText("");
         txtEmail.setText("");
         cbActive.setSelectedIndex(0);
-        txtSchedule.setText("Contoh: Senin-Jumat 08:00-16:00");
-        txtSchedule.setForeground(Color.GRAY);
+        // Jadwal dihapus
         selectedDoctorId = -1;
         doctorTable.clearSelection();
     }
@@ -556,13 +526,13 @@ public class DoctorCRUDPanel extends JPanel {
             txtEmail.requestFocus();
             return false;
         }
-        if (!txtEmail.getText().trim().contains("@") || !txtEmail.getText().trim().contains(".")) {
+        // ✅ Validasi email lebih ketat
+        if (!EMAIL_PATTERN.matcher(txtEmail.getText().trim()).matches()) {
             JOptionPane.showMessageDialog(this, "Format email tidak valid!");
             txtEmail.requestFocus();
             return false;
         }
 
-        // ✅ Validasi telepon: 10–13 digit angka
         String phone = txtPhone.getText().trim();
         if (phone.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No. Telepon tidak boleh kosong!");
@@ -590,15 +560,7 @@ public class DoctorCRUDPanel extends JPanel {
             
             String status = (String) tableModel.getValueAt(selectedRow, 6);
             cbActive.setSelectedIndex(status.equals("Aktif") ? 0 : 1);
-            
-            String schedule = (String) tableModel.getValueAt(selectedRow, 7);
-            if (schedule == null || schedule.isEmpty()) {
-                txtSchedule.setText("Contoh: Senin-Jumat 08:00-16:00");
-                txtSchedule.setForeground(Color.GRAY);
-            } else {
-                txtSchedule.setText(schedule);
-                txtSchedule.setForeground(Color.BLACK);
-            }
+            // Jadwal dihapus
         }
     }
 
@@ -608,15 +570,15 @@ public class DoctorCRUDPanel extends JPanel {
 
     private boolean insertDoctor(Doctor doctor) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "INSERT INTO doctors (doctor_code, full_name, specialization, phone, email, schedule, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            // ✅ schedule dihapus dari query
+            String sql = "INSERT INTO doctors (doctor_code, full_name, specialization, phone, email, is_active) VALUES (?, ?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, doctor.getDoctorCode());
             pstmt.setString(2, doctor.getFullName());
             pstmt.setString(3, doctor.getSpecialization());
             pstmt.setString(4, doctor.getPhone());
             pstmt.setString(5, doctor.getEmail());
-            pstmt.setString(6, doctor.getSchedule());
-            pstmt.setBoolean(7, doctor.isActive());
+            pstmt.setBoolean(6, doctor.isActive());
 
             int result = pstmt.executeUpdate();
             return result > 0;
@@ -629,16 +591,16 @@ public class DoctorCRUDPanel extends JPanel {
 
     private boolean updateDoctorInDB(Doctor doctor) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "UPDATE doctors SET doctor_code=?, full_name=?, specialization=?, phone=?, email=?, schedule=?, is_active=? WHERE id=?";
+            // ✅ schedule dihapus dari query
+            String sql = "UPDATE doctors SET doctor_code=?, full_name=?, specialization=?, phone=?, email=?, is_active=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, doctor.getDoctorCode());
             pstmt.setString(2, doctor.getFullName());
             pstmt.setString(3, doctor.getSpecialization());
             pstmt.setString(4, doctor.getPhone());
             pstmt.setString(5, doctor.getEmail());
-            pstmt.setString(6, doctor.getSchedule());
-            pstmt.setBoolean(7, doctor.isActive());
-            pstmt.setInt(8, doctor.getId());
+            pstmt.setBoolean(6, doctor.isActive());
+            pstmt.setInt(7, doctor.getId());
 
             int result = pstmt.executeUpdate();
             return result > 0;
