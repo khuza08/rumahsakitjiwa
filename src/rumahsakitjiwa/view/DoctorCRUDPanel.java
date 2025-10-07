@@ -101,12 +101,6 @@ public class DoctorCRUDPanel extends JPanel {
 
         gbc.gridwidth = 1;
 
-        gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(new JLabel("Kode Dokter:"), gbc);
-        txtDoctorCode = new JTextField(15);
-        gbc.gridx = 1;
-        formPanel.add(txtDoctorCode, gbc);
-
         gbc.gridx = 0; gbc.gridy = 2;
         formPanel.add(new JLabel("Nama Lengkap:"), gbc);
         txtFullName = new JTextField(15);
