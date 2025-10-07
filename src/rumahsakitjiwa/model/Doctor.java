@@ -8,6 +8,7 @@ public class Doctor {
     private String phone;
     private String email;
     private String schedule;
+    private String address;
     private boolean isActive;
 
     // Constructors
@@ -26,6 +27,13 @@ public class Doctor {
     }
 
     // Getters and Setters
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
     public int getId() {
         return id;
     }
