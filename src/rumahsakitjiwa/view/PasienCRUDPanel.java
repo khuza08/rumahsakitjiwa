@@ -281,7 +281,7 @@ buttonPanel.add(btnClear);
         };
 
         pasienTable = new JTable(tableModel);
-        pasienTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        pasienTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         pasienTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 loadSelectedPasien();
@@ -430,28 +430,34 @@ buttonPanel.add(btnClear);
         }
     }
 
-    private void deletePasien() {
-        if (selectedPasienId == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih pasien yang akan dihapus!");
-            return;
-        }
-        int confirm = JOptionPane.showConfirmDialog(this, 
-            "Apakah Anda yakin ingin menghapus data pasien ini?", 
-            "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
-            if (deletePasienFromDB(selectedPasienId)) {
-                JOptionPane.showMessageDialog(this, "Data pasien berhasil dihapus!");
-                loadPasienData();
-                clearForm();
-                // Refresh dashboard jika ada referensinya
-                if (dashboard != null) {
-                    dashboard.refreshDashboard();
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menghapus data pasien!", "Error", JOptionPane.ERROR_MESSAGE);
+private void deletePasien() {
+    int[] selectedRows = pasienTable.getSelectedRows();
+    if (selectedRows.length == 0) {
+        JOptionPane.showMessageDialog(this, "Pilih pasien yang akan dihapus!");
+        return;
+    }
+
+    int confirm = JOptionPane.showConfirmDialog(this, 
+        "Apakah Anda yakin ingin menghapus " + selectedRows.length + " data pasien?", 
+        "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
+    if (confirm == JOptionPane.YES_OPTION) {
+        boolean success = true;
+        for (int row : selectedRows) {
+            int id = (Integer) tableModel.getValueAt(row, 0);
+            if (!deletePasienFromDB(id)) {
+                success = false;
             }
         }
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Data pasien berhasil dihapus!");
+            loadPasienData();
+            clearForm();
+            if (dashboard != null) dashboard.refreshDashboard();
+        } else {
+            JOptionPane.showMessageDialog(this, "Sebagian data gagal dihapus!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
+}
 
     private void clearForm() {
         txtPatientCode.setText("");
