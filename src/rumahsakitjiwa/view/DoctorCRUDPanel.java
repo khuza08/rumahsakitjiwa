@@ -528,6 +528,17 @@ private void deleteDoctor() {
             txtPhone.requestFocus();
             return false;
         }
+        
+        String fullName = txtFullName.getText().trim();
+        String email = txtEmail.getText().trim().toLowerCase(); // normalisasi ke lowercase
+
+        if (isDuplicateDoctor(fullName, email, selectedDoctorId)) {
+            JOptionPane.showMessageDialog(this, 
+                "Dokter dengan nama dan email yang sama sudah ada!", 
+                "Duplikat Data", 
+                JOptionPane.WARNING_MESSAGE);
+            return false;
+    }
 
         return true;
     }
@@ -550,7 +561,32 @@ private void deleteDoctor() {
     private void loadDoctorData() {
         applyFilter();
     }
-
+    
+    private boolean isDuplicateDoctor(String fullName, String email, int excludeId) {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        // Gunakan LOWER() untuk case-insensitive
+        String sql = "SELECT COUNT(*) FROM doctors WHERE LOWER(full_name) = LOWER(?) AND LOWER(email) = LOWER(?)";
+        if (excludeId != -1) {
+            sql += " AND id != ?";
+        }
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setString(1, fullName);
+        pstmt.setString(2, email);
+        if (excludeId != -1) {
+            pstmt.setInt(3, excludeId);
+        }
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            return rs.getInt(1) > 0;
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error saat cek duplikat: " + e.getMessage(),
+                "Database Error", JOptionPane.ERROR_MESSAGE);
+    }
+    return false;
+}
+    
     private boolean insertDoctor(Doctor doctor) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             // ✅ Tambah kolom address
