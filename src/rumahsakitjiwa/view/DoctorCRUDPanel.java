@@ -227,12 +227,18 @@ public class DoctorCRUDPanel extends JPanel {
         };
 
         doctorTable = new JTable(tableModel);
-        doctorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        doctorTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         doctorTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                loadSelectedDoctor();
-            }
-        });
+        if (!e.getValueIsAdjusting()) {
+        int selectedRow = doctorTable.getSelectedRow();
+        // Hanya load data jika **satu baris** dipilih
+        if (selectedRow >= 0 && doctorTable.getSelectedRowCount() == 1) {
+            loadSelectedDoctor();
+        } else {
+            selectedDoctorId = -1; // Reset saat multi-select atau tidak ada pilihan
+        }
+    }
+});
 
         JTableHeader header = doctorTable.getTableHeader();
         header.setBackground(new Color(0x96A78D));
@@ -438,30 +444,41 @@ public class DoctorCRUDPanel extends JPanel {
         }
     }
 
-    private void deleteDoctor() {
-        if (selectedDoctorId == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih dokter yang akan dihapus!");
-            return;
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(this, 
-            "Apakah Anda yakin ingin menghapus data dokter ini?", 
-            "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            if (deleteDoctorFromDB(selectedDoctorId)) {
-                JOptionPane.showMessageDialog(this, "Data dokter berhasil dihapus!");
-                refreshSpecializationsAndFilter();
-                clearForm();
-                if (dashboard != null) {
-                    dashboard.refreshDashboard();
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menghapus data dokter!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
+private void deleteDoctor() {
+    int[] selectedRows = doctorTable.getSelectedRows();
+    if (selectedRows.length == 0) {
+        JOptionPane.showMessageDialog(this, "Pilih dokter yang akan dihapus!");
+        return;
     }
 
+    String message = (selectedRows.length == 1) 
+        ? "Apakah Anda yakin ingin menghapus data dokter ini?" 
+        : "Apakah Anda yakin ingin menghapus " + selectedRows.length + " data dokter?";
+    
+    int confirm = JOptionPane.showConfirmDialog(this, message, "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
+    
+    if (confirm == JOptionPane.YES_OPTION) {
+        boolean success = true;
+        for (int row : selectedRows) {
+            int id = (Integer) tableModel.getValueAt(row, 0);
+            if (!deleteDoctorFromDB(id)) {
+                success = false;
+            }
+        }
+        
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Data dokter berhasil dihapus!");
+            refreshSpecializationsAndFilter();
+            clearForm();
+            if (dashboard != null) {
+                dashboard.refreshDashboard();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Sebagian data gagal dihapus!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
+    
     private void clearForm() {
         txtFullName.setText("");
         txtSpecialization.setText("");
