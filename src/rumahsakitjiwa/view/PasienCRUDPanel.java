@@ -319,27 +319,27 @@ public class PasienCRUDPanel extends JPanel {
         return button;
     }
 
-    // ✅ Generate kode pasien otomatis: PSN001, PSN002, ...
-    private String generatePatientCode() {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT MAX(CAST(SUBSTRING(patient_code, 4) AS INTEGER)) AS max_num FROM patients WHERE patient_code LIKE 'PSN%'";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-            int nextNumber = 1;
-            if (rs.next()) {
-                Integer maxNum = rs.getInt("max_num");
-                if (!rs.wasNull()) {
-                    nextNumber = maxNum + 1;
-                }
+   private String generatePatientCode() {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        // ✅ Perbaikan: gunakan SIGNED bukan INTEGER
+        String sql = "SELECT MAX(CAST(SUBSTRING(patient_code, 4) AS SIGNED)) AS max_num FROM patients WHERE patient_code LIKE 'PSN%'";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        ResultSet rs = pstmt.executeQuery();
+        int nextNumber = 1;
+        if (rs.next()) {
+            Integer maxNum = rs.getObject("max_num", Integer.class); // Lebih aman pakai getObject
+            if (maxNum != null) {
+                nextNumber = maxNum + 1;
             }
-            return String.format("PSN%03d", nextNumber);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal generate kode pasien: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
-            return "PSN001"; // fallback
         }
+        return String.format("PSN%03d", nextNumber);
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Gagal generate kode pasien: " + e.getMessage(),
+                "Database Error", JOptionPane.ERROR_MESSAGE);
+        return "PSN001"; // fallback
     }
+}
 
     private void addPasien() {
         if (validateInput()) {
