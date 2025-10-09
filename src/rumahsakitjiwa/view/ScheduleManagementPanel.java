@@ -69,17 +69,18 @@ public class ScheduleManagementPanel extends JPanel {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Integer) {
+                if (value == null) {
+                    setText("Pilih Dokter");
+                    setForeground(Color.GRAY); // Opsional: warna abu-abu untuk placeholder
+                } else if (value instanceof Integer) {
                     Integer id = (Integer) value;
                     DoctorInfo info = doctorInfoMap.get(id);
-                    setText(info != null ? info.name : "Pilih Dokter");
-                } else {
-                    setText("Pilih Dokter");
+                    setText(info != null ? info.name : "Dokter Tidak Diketahui");
+                    setForeground(Color.BLACK); // Reset warna
                 }
                 return this;
             }
         });
-        // Listener untuk update kode dokter
         cbDoctors.addActionListener(e -> updateDoctorCode());
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(cbDoctors, gbc);
@@ -158,24 +159,21 @@ public class ScheduleManagementPanel extends JPanel {
         resetFormToDefault();
     }
 
-    // ✅ Update field kode dokter
     private void updateDoctorCode() {
         Object selected = cbDoctors.getSelectedItem();
-        if (selected instanceof Integer && (Integer) selected != -1) {
+        if (selected instanceof Integer) {
             DoctorInfo info = doctorInfoMap.get((Integer) selected);
             txtDoctorCode.setText(info != null ? info.code : "");
         } else {
-            txtDoctorCode.setText("");
+            txtDoctorCode.setText(""); // Jika null atau tidak valid
         }
     }
 
     private void loadDoctors() {
         doctorInfoMap.clear();
-        cbDoctors.removeAllItems();
-        cbDoctors.addItem(-1); // placeholder
+        cbDoctors.removeAllItems(); // Hapus semua item
 
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // Pastikan tabel 'doctors' punya kolom 'code'
             String sql = "SELECT id, full_name, doctor_code FROM doctors ORDER BY full_name";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
@@ -183,20 +181,23 @@ public class ScheduleManagementPanel extends JPanel {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String name = rs.getString("full_name");
-                String code = rs.getString("doctor_code");                
+                String code = rs.getString("doctor_code");
                 doctorInfoMap.put(id, new DoctorInfo(name, code));
-                cbDoctors.addItem(id);
+                cbDoctors.addItem(id); // Tambahkan ID dokter saja
             }
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal memuat daftar dokter: " + e.getMessage(),
                     "Database Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        // Set default: null (untuk trigger placeholder)
+        cbDoctors.setSelectedItem(null);
     }
 
     private void resetFormToDefault() {
-        cbDoctors.setSelectedItem(-1);
-        txtDoctorCode.setText(""); // Kosongkan kode
+        cbDoctors.setSelectedItem(null); // ← Ini akan trigger placeholder
+        txtDoctorCode.setText("");
         for (JCheckBox box : dayBoxes) box.setSelected(false);
         cbShift.setSelectedIndex(0);
     }
@@ -246,7 +247,11 @@ public class ScheduleManagementPanel extends JPanel {
                 break;
             }
         }
-        cbDoctors.setSelectedItem(doctorId);
+        if (doctorId != -1) {
+            cbDoctors.setSelectedItem(doctorId);
+        } else {
+            cbDoctors.setSelectedItem(null); // Jika tidak ditemukan, kosongkan
+        }
         // Kode dokter akan otomatis update via listener
 
         // Load days
@@ -276,7 +281,7 @@ public class ScheduleManagementPanel extends JPanel {
 
     private boolean validateInput() {
         Object selected = cbDoctors.getSelectedItem();
-        if (selected == null || (Integer) selected == -1) {
+        if (selected == null) { // ← Bukan -1, tapi null
             JOptionPane.showMessageDialog(this, "Pilih dokter!");
             return false;
         }
