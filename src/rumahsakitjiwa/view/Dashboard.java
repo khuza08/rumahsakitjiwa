@@ -28,12 +28,10 @@ public class Dashboard extends JPanel {
         RoomStatistics roomStats = getRoomStatistics();
         int totalPatients = getTotalPatients();
         int patientsToday = getPatientsToday();
-        int activeDoctors = getActiveDoctors();
         int schedulesToday = getSchedulesToday(); // Perbaiki typo
 
         add(createStatCard("Total Pasien", String.valueOf(totalPatients), new Color(0x4CAF50)));
         add(createStatCard("Pasien Hari Ini", String.valueOf(patientsToday), new Color(0x2196F3)));
-        add(createStatCard("Dokter Aktif", String.valueOf(activeDoctors), new Color(0xFF9800)));
         add(createStatCard("Total Kamar", String.valueOf(roomStats.totalRooms), new Color(0x9C27B0)));
         add(createStatCard("Kamar Tersedia", String.valueOf(roomStats.availableRooms), new Color(0x00BCD4)));
         add(createStatCard("Jadwal Hari Ini", String.valueOf(schedulesToday), new Color(0xF44336)));
@@ -129,19 +127,6 @@ public class Dashboard extends JPanel {
         return 0;
     }
 
-    private int getActiveDoctors() {
-        try(Connection conn = DatabaseConnection.getConnection()){
-            String sql = "SELECT COUNT(*) AS count FROM doctors WHERE is_active = TRUE";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-            if(rs.next()){
-                return rs.getInt("count");
-            }
-        }catch(SQLException e){
-            System.err.println("Error getting doctor count: "+e.getMessage());
-        }
-        return 0;
-    }
     
     private int getSchedulesToday() {
         try (Connection conn = DatabaseConnection.getConnection()) {

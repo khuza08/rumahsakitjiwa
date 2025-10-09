@@ -32,7 +32,6 @@
 
         public ScheduleManagementPanel() {
             initComponents();
-            loadDoctors();
             loadSchedules();
         }
 
@@ -183,28 +182,12 @@
             chkActive.setSelected(true);
         }
 
-        private void loadDoctors() {
-            cbDoctors.removeAllItems();
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                String sql = "SELECT id, full_name FROM doctors WHERE is_active = TRUE ORDER BY full_name";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                ResultSet rs = pstmt.executeQuery();
-
-                while (rs.next()) {
-                    cbDoctors.addItem(rs.getInt("id") + " - " + rs.getString("full_name"));
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Gagal memuat data dokter: " + e.getMessage(), 
-                        "Database Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
 
         private void loadSchedules() {
             isFirstLoad = true; // Set flag untuk mencegah pemilihan otomatis
             tableModel.setRowCount(0);
             try (Connection conn = DatabaseConnection.getConnection()) {
-                String sql = "SELECT s.id, d.full_name, s.day_of_week, s.start_time, s.end_time, s.location, s.max_patients, s.is_active " +
+                String sql = "SELECT s.id, d.full_name, s.day_of_week, s.start_time, s.end_time, s.location, s.max_patients " +
                              "FROM schedules s JOIN doctors d ON s.doctor_id = d.id ORDER BY d.full_name, s.day_of_week";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 ResultSet rs = pstmt.executeQuery();
@@ -222,7 +205,6 @@
                         timeFormat.format(endTime),
                         rs.getString("location"),
                         rs.getInt("max_patients"),
-                        rs.getBoolean("is_active") ? "Aktif" : "Tidak Aktif"
                     };
                     tableModel.addRow(row);
                 }
@@ -490,7 +472,7 @@
 
         private boolean insertSchedule(Schedule schedule) {
             try (Connection conn = DatabaseConnection.getConnection()) {
-                String sql = "INSERT INTO schedules (doctor_id, day_of_week, start_time, end_time, location, max_patients, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO schedules (doctor_id, day_of_week, start_time, end_time, location, max_patients) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, schedule.getDoctorId());
                 pstmt.setString(2, schedule.getDayOfWeek());
@@ -511,7 +493,7 @@
 
         private boolean updateScheduleInDB(Schedule schedule) {
             try (Connection conn = DatabaseConnection.getConnection()) {
-                String sql = "UPDATE schedules SET doctor_id=?, day_of_week=?, start_time=?, end_time=?, location=?, max_patients=?, is_active=? WHERE id=?";
+                String sql = "UPDATE schedules SET doctor_id=?, day_of_week=?, start_time=?, end_time=?, location=?, max_patients=? WHERE id=?";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, schedule.getDoctorId());
                 pstmt.setString(2, schedule.getDayOfWeek());

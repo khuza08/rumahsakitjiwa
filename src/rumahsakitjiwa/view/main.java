@@ -554,17 +554,6 @@ public class main extends JFrame {
         return 0;
     }
     
-    private int getActiveDoctors() {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT COUNT(*) as count FROM doctors WHERE is_active = TRUE";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) return rs.getInt("count");
-        } catch (SQLException e) {
-            System.err.println("Error getting doctor count: " + e.getMessage());
-        }
-        return 0;
-    }
     
     private JPanel createDashboardPanel() {
         JPanel panel = new JPanel(new GridLayout(2, 3, 20, 20));
@@ -573,11 +562,9 @@ public class main extends JFrame {
         
         RoomStatistics stats = getRoomStatistics();
         int totalPatients = getTotalPatients();
-        int activeDoctors = getActiveDoctors();
         
         panel.add(createStatCard("Total Pasien", String.valueOf(totalPatients), new Color(0x4CAF50)));
         panel.add(createStatCard("Pasien Hari Ini", "12", new Color(0x2196F3)));
-        panel.add(createStatCard("Dokter Aktif", String.valueOf(activeDoctors), new Color(0xFF9800)));
         panel.add(createStatCard("Total Kamar", String.valueOf(stats.totalRooms), new Color(0x9C27B0)));
         panel.add(createStatCard("Kamar Tersedia", String.valueOf(stats.availableRooms), new Color(0x00BCD4)));
         panel.add(createStatCard("Antrian Hari Ini", "18", new Color(0xF44336)));
