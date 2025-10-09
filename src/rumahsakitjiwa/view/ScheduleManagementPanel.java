@@ -15,7 +15,6 @@ public class ScheduleManagementPanel extends JPanel {
     private JComboBox<String> cbDoctors;
     private JCheckBox[] dayBoxes; // Senin - Sabtu
     private JComboBox<String> cbShift;
-    private JSpinner spMaxPatients;
     private JButton btnAddSchedule, btnUpdateSchedule, btnDeleteSchedule, btnClearForm;
     private JTable scheduleTable;
     private DefaultTableModel tableModel;
@@ -77,18 +76,7 @@ public class ScheduleManagementPanel extends JPanel {
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(cbShift, gbc);
 
-        // Max patients → sekarang di gridy = 3
-        gbc.gridx = 0; gbc.gridy = 3;
-        formPanel.add(new JLabel("Maks. Pasien:"), gbc);
-        spMaxPatients = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        formPanel.add(spMaxPatients, gbc);
-
-        JComponent editor = spMaxPatients.getEditor();
-        JFormattedTextField tf = ((JSpinner.NumberEditor) editor).getTextField();
-        tf.setHorizontalAlignment(JTextField.LEFT);
-
-        // Buttons → sekarang di gridy = 4
+        // Buttons → sekarang di gridy = 3
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnAddSchedule = new JButton("Tambah");
         btnUpdateSchedule = new JButton("Update");
@@ -105,11 +93,11 @@ public class ScheduleManagementPanel extends JPanel {
         buttonPanel.add(btnDeleteSchedule);
         buttonPanel.add(btnClearForm);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         formPanel.add(buttonPanel, gbc);
 
         // Table
-        String[] columns = {"ID", "Dokter", "Hari", "Shift", "Maks. Pasien"};
+        String[] columns = {"ID", "Dokter", "Hari", "Shift"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -136,14 +124,13 @@ public class ScheduleManagementPanel extends JPanel {
         cbDoctors.setSelectedIndex(-1);
         for (JCheckBox box : dayBoxes) box.setSelected(false);
         cbShift.setSelectedIndex(0);
-        spMaxPatients.setValue(10);
     }
 
     private void loadSchedules() {
         isFirstLoad = true;
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT s.id, d.full_name, s.days, s.shift, s.max_patients " +
+            String sql = "SELECT s.id, d.full_name, s.days, s.shift " +
                          "FROM schedules s JOIN doctors d ON s.doctor_id = d.id ORDER BY d.full_name";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
@@ -153,8 +140,7 @@ public class ScheduleManagementPanel extends JPanel {
                     rs.getInt("id"),
                     rs.getString("full_name"),
                     rs.getString("days"),
-                    rs.getString("shift"),
-                    rs.getInt("max_patients")
+                    rs.getString("shift")
                 };
                 tableModel.addRow(row);
             }
@@ -199,9 +185,6 @@ public class ScheduleManagementPanel extends JPanel {
         // Load shift
         String shift = (String) tableModel.getValueAt(selectedRow, 3);
         cbShift.setSelectedItem(shift);
-
-        // Load max patients → indeks 4 (karena lokasi dihapus)
-        spMaxPatients.setValue((Integer) tableModel.getValueAt(selectedRow, 4));
     }
 
     private String getSelectedDays() {
@@ -234,13 +217,11 @@ public class ScheduleManagementPanel extends JPanel {
             int doctorId = Integer.parseInt(doctorInfo.split(" - ")[0]);
             String days = getSelectedDays();
             String shift = (String) cbShift.getSelectedItem();
-            int maxPatients = (Integer) spMaxPatients.getValue();
 
             Schedule schedule = new Schedule();
             schedule.setDoctorId(doctorId);
             schedule.setDays(days);
             schedule.setShift(shift);
-            schedule.setMaxPatients(maxPatients);
 
             if (insertSchedule(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal berhasil ditambahkan!");
@@ -268,14 +249,12 @@ public class ScheduleManagementPanel extends JPanel {
             int doctorId = Integer.parseInt(doctorInfo.split(" - ")[0]);
             String days = getSelectedDays();
             String shift = (String) cbShift.getSelectedItem();
-            int maxPatients = (Integer) spMaxPatients.getValue();
 
             Schedule schedule = new Schedule();
             schedule.setId(selectedScheduleId);
             schedule.setDoctorId(doctorId);
             schedule.setDays(days);
             schedule.setShift(shift);
-            schedule.setMaxPatients(maxPatients);
 
             if (updateScheduleInDB(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal berhasil diupdate!");
@@ -321,13 +300,11 @@ public class ScheduleManagementPanel extends JPanel {
 
     private boolean insertSchedule(Schedule schedule) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // HANYA 4 kolom: doctor_id, days, shift, max_patients
-            String sql = "INSERT INTO schedules (doctor_id, days, shift, max_patients) VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO schedules (doctor_id, days, shift) VALUES (?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, schedule.getDoctorId());
             pstmt.setString(2, schedule.getDays());
             pstmt.setString(3, schedule.getShift());
-            pstmt.setInt(4, schedule.getMaxPatients()); // <-- indeks benar: 4
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -338,14 +315,12 @@ public class ScheduleManagementPanel extends JPanel {
 
     private boolean updateScheduleInDB(Schedule schedule) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // HANYA 4 kolom di SET, + WHERE id
-            String sql = "UPDATE schedules SET doctor_id=?, days=?, shift=?, max_patients=? WHERE id=?";
+            String sql = "UPDATE schedules SET doctor_id=?, days=?, shift=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, schedule.getDoctorId());
             pstmt.setString(2, schedule.getDays());
             pstmt.setString(3, schedule.getShift());
-            pstmt.setInt(4, schedule.getMaxPatients()); // <-- tidak ada setLocation!
-            pstmt.setInt(5, schedule.getId());
+            pstmt.setInt(4, schedule.getId());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
