@@ -20,6 +20,7 @@ public class DoctorCRUDPanel extends JPanel {
     private JTextField txtDoctorCode, txtFullName, txtPhone, txtEmail, txtAddress; // ✅ txtDoctorCode ditambahkan, txtSpecialization dihapus
     // private JComboBox<String> cbActive; // ❌ dihapus
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
+    private JLabel totalDoctorLabel; // ✅ untuk update total dokter
     private int selectedDoctorId = -1;
     private Dashboard dashboard;
     
@@ -164,66 +165,73 @@ public class DoctorCRUDPanel extends JPanel {
         return formPanel;
     }
 
-    private JPanel createTablePanel() {
-        JPanel tablePanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(255, 255, 255, 200));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                g2d.dispose();
-            }
-        };
-        tablePanel.setOpaque(false);
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+private JPanel createTablePanel() {
+    JPanel tablePanel = new JPanel(new BorderLayout()) {
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(new Color(255, 255, 255, 200));
+            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+            g2d.dispose();
+        }
+    };
+    tablePanel.setOpaque(false);
+    tablePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel tableTitle = new JLabel("Daftar Dokter");
-        tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        tableTitle.setForeground(new Color(0x6da395));
-        tablePanel.add(tableTitle, BorderLayout.NORTH);
+    JLabel tableTitle = new JLabel("Daftar Dokter");
+    tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+    tableTitle.setForeground(new Color(0x6da395));
+    tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        // ❌ Filter dihapus
+    // ✅ Tambahkan label total dokter
+    JLabel totalLabel = new JLabel("Total Dokter: 0", SwingConstants.RIGHT);
+    totalLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+    totalLabel.setForeground(new Color(0x6da395));
+    tablePanel.add(totalLabel, BorderLayout.SOUTH);
 
-        // ✅ Kolom tabel: Hanya ID, Kode, Nama, Alamat, Telepon, Email
-        String[] columns = {"ID", "ID Dokter", "Nama Lengkap", "Alamat", "Telepon", "Email"};
-        tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
+    // Kolom tabel: Hanya ID, ID Dokter, Nama, Alamat, Telepon, Email
+    String[] columns = {"ID", "ID Dokter", "Nama Lengkap", "Alamat", "Telepon", "Email"};
+    tableModel = new DefaultTableModel(columns, 0) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
 
-        doctorTable = new JTable(tableModel);
-        doctorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // ubah ke single selection
-        doctorTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                loadSelectedDoctor();
-            }
-        });
+    doctorTable = new JTable(tableModel);
+    doctorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    doctorTable.getSelectionModel().addListSelectionListener(e -> {
+        if (!e.getValueIsAdjusting()) {
+            loadSelectedDoctor();
+        }
+    });
 
-        JTableHeader header = doctorTable.getTableHeader();
-        header.setBackground(new Color(0x96A78D));
-        header.setForeground(Color.WHITE);
-        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
+    JTableHeader header = doctorTable.getTableHeader();
+    header.setBackground(new Color(0x96A78D));
+    header.setForeground(Color.WHITE);
+    header.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        doctorTable.setRowHeight(25);
-        doctorTable.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        doctorTable.setGridColor(new Color(200, 200, 200));
-        doctorTable.setSelectionBackground(new Color(0x6da395));
+    doctorTable.setRowHeight(25);
+    doctorTable.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+    doctorTable.setGridColor(new Color(200, 200, 200));
+    doctorTable.setSelectionBackground(new Color(0x6da395));
 
-        doctorTable.getColumnModel().getColumn(0).setMaxWidth(0);
-        doctorTable.getColumnModel().getColumn(0).setMinWidth(0);
-        doctorTable.getColumnModel().getColumn(0).setPreferredWidth(0);
+    doctorTable.getColumnModel().getColumn(0).setMaxWidth(0);
+    doctorTable.getColumnModel().getColumn(0).setMinWidth(0);
+    doctorTable.getColumnModel().getColumn(0).setPreferredWidth(0);
 
-        JScrollPane scrollPane = new JScrollPane(doctorTable);
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
-        
-        tablePanel.add(scrollPane, BorderLayout.CENTER);
+    JScrollPane scrollPane = new JScrollPane(doctorTable);
+    scrollPane.setOpaque(false);
+    scrollPane.getViewport().setOpaque(false);
+    
+    tablePanel.add(scrollPane, BorderLayout.CENTER);
 
-        return tablePanel;
-    }
+    // ✅ Simpan referensi ke totalLabel agar bisa diupdate
+    this.totalDoctorLabel = totalLabel; // tambahkan field di class: private JLabel totalDoctorLabel;
+
+    return tablePanel;
+}
 
     // ❌ loadSpecializations() dan applyFilter() dihapus
 
@@ -440,6 +448,7 @@ public class DoctorCRUDPanel extends JPanel {
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
+            int count = 0;
             while (rs.next()) {
                 Object[] row = {
                     rs.getInt("id"),
@@ -448,9 +457,14 @@ public class DoctorCRUDPanel extends JPanel {
                     rs.getString("address"),
                     rs.getString("phone"),
                     rs.getString("email")
-                    // ❌ specialization dan is_active dihapus
                 };
                 tableModel.addRow(row);
+                count++;
+            }
+
+            // ✅ Update total dokter
+            if (totalDoctorLabel != null) {
+                totalDoctorLabel.setText("Total Dokter: " + count);
             }
         } catch (SQLException e) {
             e.printStackTrace();
