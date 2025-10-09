@@ -12,7 +12,7 @@ import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Schedule;
 
 public class ScheduleManagementPanel extends JPanel {
-    private JComboBox<String> cbDoctors;
+    private JComboBox<Integer> cbDoctors; // <-- Ganti ke Integer (menyimpan doctor_id)
     private JCheckBox[] dayBoxes; // Senin - Sabtu
     private JComboBox<String> cbShift;
     private JButton btnAddSchedule, btnUpdateSchedule, btnDeleteSchedule, btnClearForm;
@@ -29,8 +29,12 @@ public class ScheduleManagementPanel extends JPanel {
         "Malam (22:00 - 06:00)"
     };
 
+    // Untuk mapping ID -> Nama Dokter
+    private Map<Integer, String> doctorMap = new HashMap<>();
+
     public ScheduleManagementPanel() {
         initComponents();
+        loadDoctors(); // <-- Load dokter dari DB
         loadSchedules();
     }
 
@@ -53,6 +57,18 @@ public class ScheduleManagementPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 0;
         formPanel.add(new JLabel("Dokter:"), gbc);
         cbDoctors = new JComboBox<>();
+        // Custom renderer agar tampilkan nama, bukan ID
+        cbDoctors.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Integer) {
+                    Integer id = (Integer) value;
+                    setText(doctorMap.getOrDefault(id, "Pilih Dokter"));
+                }
+                return this;
+            }
+        });
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(cbDoctors, gbc);
 
@@ -76,7 +92,7 @@ public class ScheduleManagementPanel extends JPanel {
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(cbShift, gbc);
 
-        // Buttons → sekarang di gridy = 3
+        // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnAddSchedule = new JButton("Tambah");
         btnUpdateSchedule = new JButton("Update");
@@ -120,8 +136,32 @@ public class ScheduleManagementPanel extends JPanel {
         resetFormToDefault();
     }
 
+    // ✅ Load dokter dari database
+    private void loadDoctors() {
+        doctorMap.clear();
+        cbDoctors.removeAllItems();
+        cbDoctors.addItem(-1); // placeholder "Pilih dokter"
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT id, full_name FROM doctors ORDER BY full_name";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("full_name");
+                doctorMap.put(id, name);
+                cbDoctors.addItem(id);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal memuat daftar dokter: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void resetFormToDefault() {
-        cbDoctors.setSelectedIndex(-1);
+        cbDoctors.setSelectedItem(-1);
         for (JCheckBox box : dayBoxes) box.setSelected(false);
         cbShift.setSelectedIndex(0);
     }
@@ -161,16 +201,17 @@ public class ScheduleManagementPanel extends JPanel {
         if (selectedRow < 0) return;
 
         selectedScheduleId = (Integer) tableModel.getValueAt(selectedRow, 0);
-
-        // Load doctor
         String doctorName = (String) tableModel.getValueAt(selectedRow, 1);
-        for (int i = 0; i < cbDoctors.getItemCount(); i++) {
-            String item = (String) cbDoctors.getItemAt(i);
-            if (item != null && item.contains(doctorName)) {
-                cbDoctors.setSelectedIndex(i);
+
+        // Cari ID berdasarkan nama
+        int doctorId = -1;
+        for (Map.Entry<Integer, String> entry : doctorMap.entrySet()) {
+            if (entry.getValue().equals(doctorName)) {
+                doctorId = entry.getKey();
                 break;
             }
         }
+        cbDoctors.setSelectedItem(doctorId);
 
         // Load days
         String daysStr = (String) tableModel.getValueAt(selectedRow, 2);
@@ -198,7 +239,8 @@ public class ScheduleManagementPanel extends JPanel {
     }
 
     private boolean validateInput() {
-        if (cbDoctors.getSelectedIndex() == -1) {
+        Object selected = cbDoctors.getSelectedItem();
+        if (selected == null || (Integer) selected == -1) {
             JOptionPane.showMessageDialog(this, "Pilih dokter!");
             return false;
         }
@@ -213,8 +255,7 @@ public class ScheduleManagementPanel extends JPanel {
         if (!validateInput()) return;
 
         try {
-            String doctorInfo = (String) cbDoctors.getSelectedItem();
-            int doctorId = Integer.parseInt(doctorInfo.split(" - ")[0]);
+            int doctorId = (Integer) cbDoctors.getSelectedItem(); // ✅ Langsung ambil ID
             String days = getSelectedDays();
             String shift = (String) cbShift.getSelectedItem();
 
@@ -245,8 +286,7 @@ public class ScheduleManagementPanel extends JPanel {
         if (!validateInput()) return;
 
         try {
-            String doctorInfo = (String) cbDoctors.getSelectedItem();
-            int doctorId = Integer.parseInt(doctorInfo.split(" - ")[0]);
+            int doctorId = (Integer) cbDoctors.getSelectedItem(); // ✅ Langsung ambil ID
             String days = getSelectedDays();
             String shift = (String) cbShift.getSelectedItem();
 
@@ -339,6 +379,6 @@ public class ScheduleManagementPanel extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
-        }
+        }   
     }
 }
