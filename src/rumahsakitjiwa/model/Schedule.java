@@ -1,96 +1,74 @@
 package rumahsakitjiwa.model;
 
-import java.sql.Time;
-
 public class Schedule {
     private int id;
     private int doctorId;
-    private String dayOfWeek;
-    private Time startTime;
-    private Time endTime;
+    private String days;        // e.g., "Senin,Selasa"
+    private String shift;       // e.g., "Pagi (06:00 - 14:00)"
     private String location;
     private int maxPatients;
-    private boolean isActive;
     
     // Default constructor
     public Schedule() {
     }
     
     // Parameterized constructor
-    public Schedule(int id, int doctorId, String dayOfWeek, Time startTime, Time endTime, 
-                   String location, int maxPatients, boolean isActive) {
+    public Schedule(int id, int doctorId, String days, String shift, 
+                    String location, int maxPatients) {
         this.id = id;
         this.doctorId = doctorId;
-        this.dayOfWeek = dayOfWeek;
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.days = days;
+        this.shift = shift;
         this.location = location;
         this.maxPatients = maxPatients;
-        this.isActive = isActive;
     }
     
-    // Getter and Setter methods
+    // Getters and Setters
     public int getId() {
         return id;
     }
-    
+
     public void setId(int id) {
         this.id = id;
     }
-    
+
     public int getDoctorId() {
         return doctorId;
     }
-    
+
     public void setDoctorId(int doctorId) {
         this.doctorId = doctorId;
     }
-    
-    public String getDayOfWeek() {
-        return dayOfWeek;
+
+    public String getDays() {
+        return days;
     }
-    
-    public void setDayOfWeek(String dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
+
+    public void setDays(String days) {
+        this.days = days;
     }
-    
-    public Time getStartTime() {
-        return startTime;
+
+    public String getShift() {
+        return shift;
     }
-    
-    public void setStartTime(Time startTime) {
-        this.startTime = startTime;
+
+    public void setShift(String shift) {
+        this.shift = shift;
     }
-    
-    public Time getEndTime() {
-        return endTime;
-    }
-    
-    public void setEndTime(Time endTime) {
-        this.endTime = endTime;
-    }
-    
+
     public String getLocation() {
         return location;
     }
-    
+
     public void setLocation(String location) {
         this.location = location;
     }
-    
+
     public int getMaxPatients() {
         return maxPatients;
     }
-    
+
     public void setMaxPatients(int maxPatients) {
         this.maxPatients = maxPatients;
-    }
-    
-    public boolean isActive() {
-        return isActive;
-    }
-    
-    public void setActive(boolean active) {
-        isActive = active;
     }
 }
