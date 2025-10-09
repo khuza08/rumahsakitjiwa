@@ -27,7 +27,7 @@ public class main extends JFrame {
     private Dashboard dashboardPanel;
     private RoomCRUDPanel roomCRUDPanel;
     private DoctorCRUDPanel doctorCRUDPanel;
-    private PasienCRUDPanel pasienCRUDPanel;
+    private PasienCRUDPanel pasienCRUDPanel; // hanya digunakan oleh resepsionis
     private ScheduleManagementPanel scheduleManagementPanel;
     private ReportPanel reportPanel;
     
@@ -91,15 +91,19 @@ public class main extends JFrame {
         contentPanel.setOpaque(false);
 
         dashboardPanel = new Dashboard();
-        pasienCRUDPanel = new PasienCRUDPanel();
-        
-        // Tambahkan panel untuk semua role
         contentPanel.add(dashboardPanel, "DASHBOARD");
-        contentPanel.add(pasienCRUDPanel, "PASIEN");
+
+        // === HANYA TAMBAHKAN PANEL PASIEN UNTUK RESEPSIONIS ===
+        if ("resepsionis".equals(userRole)) {
+            pasienCRUDPanel = new PasienCRUDPanel();
+            pasienCRUDPanel.setUserRole(userRole);
+            pasienCRUDPanel.setDashboard(dashboardPanel);
+            contentPanel.add(pasienCRUDPanel, "PASIEN");
+        }
         
         // Tambahkan panel berdasarkan role
         if ("admin".equals(userRole)) {
-            // Admin: akses penuh
+            // Admin: akses penuh — TANPA PASIEN
             roomCRUDPanel = new RoomCRUDPanel();
             doctorCRUDPanel = new DoctorCRUDPanel();
             scheduleManagementPanel = new ScheduleManagementPanel();
@@ -158,11 +162,9 @@ public class main extends JFrame {
         
         // Menu berdasarkan role
         if ("admin".equals(userRole)) {
-            // Menu untuk admin
-            String[] menuItems = {"Dashboard", "Data Pasien", "Data Dokter", "Data Kamar", 
-                                  "Jadwal", "Laporan"};
-            String[] menuKeys = {"DASHBOARD", "PASIEN", "DOKTER", "KAMAR", 
-                                 "JADWAL", "LAPORAN"};
+            // === ADMIN: TANPA "Data Pasien" ===
+            String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Jadwal", "Laporan"};
+            String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "JADWAL", "LAPORAN"};
             
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
@@ -173,7 +175,7 @@ public class main extends JFrame {
             }
             
         } else if ("resepsionis".equals(userRole)) {
-            // Menu untuk resepsionis
+            // === RESEPSIONIS: DENGAN "Data Pasien" ===
             String[] menuItems = {"Dashboard", "Data Pasien", "Pendaftaran Baru", "Jadwal Konsultasi", "Antrian Pasien"};
             String[] menuKeys = {"DASHBOARD", "PASIEN", "PENDAFTARAN", "JADWAL", "ANTRIAN"};
             
@@ -508,7 +510,7 @@ public class main extends JFrame {
         }
     }
     
-    // Database connection & statistics (gunakan kelas DatabaseConnection yang valid)
+    // Database connection & statistics
     private static class RoomStatistics {
         int totalRooms;
         int availableRooms;

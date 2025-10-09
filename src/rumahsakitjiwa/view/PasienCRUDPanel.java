@@ -24,11 +24,40 @@ public class PasienCRUDPanel extends JPanel {
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedPasienId = -1;
     private Dashboard dashboard;
+    private String userRole; // <<< TAMBAHKAN INI
 
     public PasienCRUDPanel() {
         initComponents();
         setupTable();
         loadPasienData();
+        applyRolePermissions(); // terapkan izin default (view-only)
+    }
+
+    // <<< TAMBAHKAN METHOD INI
+    public void setUserRole(String role) {
+        this.userRole = role;
+        applyRolePermissions();
+    }
+
+    // <<< TAMBAHKAN METHOD INI
+    private void applyRolePermissions() {
+        boolean isResepsionis = "resepsionis".equalsIgnoreCase(userRole);
+
+        // Nonaktifkan input untuk admin
+        txtFullName.setEditable(isResepsionis);
+        txtBirthDate.setEnabled(isResepsionis);
+        cbGender.setEnabled(isResepsionis);
+        txtAddress.setEditable(isResepsionis);
+        txtPhone.setEditable(isResepsionis);
+        txtEmergencyContact.setEditable(isResepsionis);
+        txtEmergencyPhone.setEditable(isResepsionis);
+        txtMedicalHistory.setEditable(isResepsionis);
+
+        // Sembunyikan tombol CRUD untuk admin
+        if (btnAdd != null) btnAdd.setVisible(isResepsionis);
+        if (btnUpdate != null) btnUpdate.setVisible(isResepsionis);
+        if (btnDelete != null) btnDelete.setVisible(isResepsionis);
+        if (btnClear != null) btnClear.setVisible(isResepsionis);
     }
 
     public void setDashboard(Dashboard dashboard) {
@@ -84,8 +113,8 @@ public class PasienCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         txtPatientCode = new JTextField(15);
-        txtPatientCode.setEditable(false); // ✅ Disabled
-        txtPatientCode.setBackground(Color.LIGHT_GRAY); // ✅ Greyed out
+        txtPatientCode.setEditable(false);
+        txtPatientCode.setBackground(Color.LIGHT_GRAY);
         formPanel.add(txtPatientCode, gbc);
 
         // Nama Lengkap
@@ -319,30 +348,31 @@ public class PasienCRUDPanel extends JPanel {
         return button;
     }
 
-   private String generatePatientCode() {
-    try (Connection conn = DatabaseConnection.getConnection()) {
-        // ✅ Perbaikan: gunakan SIGNED bukan INTEGER
-        String sql = "SELECT MAX(CAST(SUBSTRING(patient_code, 4) AS SIGNED)) AS max_num FROM patients WHERE patient_code LIKE 'PSN%'";
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        ResultSet rs = pstmt.executeQuery();
-        int nextNumber = 1;
-        if (rs.next()) {
-            Integer maxNum = rs.getObject("max_num", Integer.class); // Lebih aman pakai getObject
-            if (maxNum != null) {
-                nextNumber = maxNum + 1;
+    private String generatePatientCode() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT MAX(CAST(SUBSTRING(patient_code, 4) AS SIGNED)) AS max_num FROM patients WHERE patient_code LIKE 'PSN%'";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            int nextNumber = 1;
+            if (rs.next()) {
+                Integer maxNum = rs.getObject("max_num", Integer.class);
+                if (maxNum != null) {
+                    nextNumber = maxNum + 1;
+                }
             }
+            return String.format("PSN%03d", nextNumber);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal generate kode pasien: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+            return "PSN001";
         }
-        return String.format("PSN%03d", nextNumber);
-    } catch (SQLException e) {
-        e.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Gagal generate kode pasien: " + e.getMessage(),
-                "Database Error", JOptionPane.ERROR_MESSAGE);
-        return "PSN001"; // fallback
     }
-}
 
     private void addPasien() {
-        
+        // <<< TAMBAHKAN GUARD INI
+        if (!"resepsionis".equalsIgnoreCase(userRole)) return;
+
         String fullName = txtFullName.getText().trim();
         if (fullName.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Nama Lengkap tidak boleh kosong!");
@@ -350,21 +380,19 @@ public class PasienCRUDPanel extends JPanel {
             return;
         }
 
-        // ✅ Cek duplikat nama
         if (isFullNameExists(fullName, -1)) {
             JOptionPane.showMessageDialog(this, "Nama pasien sudah terdaftar! Silakan gunakan nama yang berbeda.");
             txtFullName.requestFocus();
             return;
         }
-        
+
         if (validateInput()) {
             try {
                 Pasien pasien = new Pasien();
-                // ✅ Generate kode otomatis
                 String autoCode = generatePatientCode();
                 pasien.setPatientCode(autoCode);
                 pasien.setFullName(txtFullName.getText().trim());
-                
+
                 Date selectedDate = txtBirthDate.getDate();
                 if (selectedDate != null) {
                     LocalDate birthDate = selectedDate.toInstant()
@@ -397,35 +425,31 @@ public class PasienCRUDPanel extends JPanel {
     }
 
     private void updatePasien() {
-        
-        if (selectedPasienId == -1) {
-                JOptionPane.showMessageDialog(this, "Pilih pasien yang akan diupdate!");
-                return;
-            }
+        // <<< TAMBAHKAN GUARD INI
+        if (!"resepsionis".equalsIgnoreCase(userRole)) return;
 
-            String fullName = txtFullName.getText().trim();
-            if (fullName.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Nama Lengkap tidak boleh kosong!");
-                txtFullName.requestFocus();
-                return;
-            }
-
-            // ✅ Cek duplikat nama (kecuali diri sendiri)
-            if (isFullNameExists(fullName, selectedPasienId)) {
-                JOptionPane.showMessageDialog(this, "Nama pasien sudah terdaftar! Silakan gunakan nama yang berbeda.");
-                txtFullName.requestFocus();
-                return;
-            }
-        
         if (selectedPasienId == -1) {
             JOptionPane.showMessageDialog(this, "Pilih pasien yang akan diupdate!");
             return;
         }
+
+        String fullName = txtFullName.getText().trim();
+        if (fullName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama Lengkap tidak boleh kosong!");
+            txtFullName.requestFocus();
+            return;
+        }
+
+        if (isFullNameExists(fullName, selectedPasienId)) {
+            JOptionPane.showMessageDialog(this, "Nama pasien sudah terdaftar! Silakan gunakan nama yang berbeda.");
+            txtFullName.requestFocus();
+            return;
+        }
+
         if (validateInput()) {
             try {
                 Pasien pasien = new Pasien();
                 pasien.setId(selectedPasienId);
-                // Tetap pakai kode lama saat update
                 pasien.setPatientCode(txtPatientCode.getText().trim());
                 pasien.setFullName(txtFullName.getText().trim());
 
@@ -461,6 +485,9 @@ public class PasienCRUDPanel extends JPanel {
     }
 
     private void deletePasien() {
+        // <<< TAMBAHKAN GUARD INI
+        if (!"resepsionis".equalsIgnoreCase(userRole)) return;
+
         int[] selectedRows = pasienTable.getSelectedRows();
         if (selectedRows.length == 0) {
             JOptionPane.showMessageDialog(this, "Pilih pasien yang akan dihapus!");
@@ -490,7 +517,7 @@ public class PasienCRUDPanel extends JPanel {
     }
 
     private void clearForm() {
-        txtPatientCode.setText(""); // tetap kosong, tapi disabled
+        txtPatientCode.setText("");
         txtFullName.setText("");
         txtBirthDate.setDate(null);
         cbGender.setSelectedIndex(0);
@@ -504,8 +531,6 @@ public class PasienCRUDPanel extends JPanel {
     }
 
     private boolean validateInput() {
-
-
         if (txtBirthDate.getDate() == null) {
             JOptionPane.showMessageDialog(this, "Tanggal lahir harus dipilih!");
             txtBirthDate.requestFocus();
@@ -672,21 +697,20 @@ public class PasienCRUDPanel extends JPanel {
             return false;
         }
     }
-    
+
     private boolean isFullNameExists(String fullName, int excludeId) {
-    try (Connection conn = DatabaseConnection.getConnection()) {
-        String sql = "SELECT COUNT(*) FROM patients WHERE full_name = ? AND id != ?";
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        pstmt.setString(1, fullName.trim());
-        pstmt.setInt(2, excludeId);
-        ResultSet rs = pstmt.executeQuery();
-        if (rs.next()) {
-            return rs.getInt(1) > 0;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT COUNT(*) FROM patients WHERE full_name = ? AND id != ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, fullName.trim());
+            pstmt.setInt(2, excludeId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return false;
     }
-    return false;
-}
-    
 }
