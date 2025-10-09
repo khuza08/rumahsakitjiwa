@@ -24,7 +24,7 @@ public class PasienCRUDPanel extends JPanel {
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedPasienId = -1;
     private Dashboard dashboard;
-    private String userRole; // <<< TAMBAHKAN INI
+    private String userRole;
 
     public PasienCRUDPanel() {
         initComponents();
