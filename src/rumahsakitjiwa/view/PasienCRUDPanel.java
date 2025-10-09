@@ -17,7 +17,7 @@ public class PasienCRUDPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable pasienTable;
     private JTextField txtPatientCode, txtFullName, txtAddress, txtPhone;
-    private JDateChooser txtBirthDate; // <-- Changed to JDateChooser
+    private JDateChooser txtBirthDate;
     private JTextField txtEmergencyContact, txtEmergencyPhone;
     private JComboBox<String> cbGender;
     private JTextArea txtMedicalHistory;
@@ -75,7 +75,7 @@ public class PasienCRUDPanel extends JPanel {
 
         gbc.gridwidth = 1;
 
-        // Patient Code
+        // Patient Code (disabled)
         gbc.gridx = 0; gbc.gridy = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
@@ -84,6 +84,8 @@ public class PasienCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         txtPatientCode = new JTextField(15);
+        txtPatientCode.setEditable(false); // ✅ Disabled
+        txtPatientCode.setBackground(Color.LIGHT_GRAY); // ✅ Greyed out
         formPanel.add(txtPatientCode, gbc);
 
         // Nama Lengkap
@@ -101,7 +103,7 @@ public class PasienCRUDPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 3;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
-        formPanel.add(new JLabel("Tanggal Lahir:"), gbc); // Removed format hint
+        formPanel.add(new JLabel("Tanggal Lahir:"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
@@ -317,11 +319,35 @@ public class PasienCRUDPanel extends JPanel {
         return button;
     }
 
+    // ✅ Generate kode pasien otomatis: PSN001, PSN002, ...
+    private String generatePatientCode() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT MAX(CAST(SUBSTRING(patient_code, 4) AS INTEGER)) AS max_num FROM patients WHERE patient_code LIKE 'PSN%'";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            int nextNumber = 1;
+            if (rs.next()) {
+                Integer maxNum = rs.getInt("max_num");
+                if (!rs.wasNull()) {
+                    nextNumber = maxNum + 1;
+                }
+            }
+            return String.format("PSN%03d", nextNumber);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Gagal generate kode pasien: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+            return "PSN001"; // fallback
+        }
+    }
+
     private void addPasien() {
         if (validateInput()) {
             try {
                 Pasien pasien = new Pasien();
-                pasien.setPatientCode(txtPatientCode.getText().trim());
+                // ✅ Generate kode otomatis
+                String autoCode = generatePatientCode();
+                pasien.setPatientCode(autoCode);
                 pasien.setFullName(txtFullName.getText().trim());
 
                 Date selectedDate = txtBirthDate.getDate();
@@ -364,6 +390,7 @@ public class PasienCRUDPanel extends JPanel {
             try {
                 Pasien pasien = new Pasien();
                 pasien.setId(selectedPasienId);
+                // Tetap pakai kode lama saat update
                 pasien.setPatientCode(txtPatientCode.getText().trim());
                 pasien.setFullName(txtFullName.getText().trim());
 
@@ -428,7 +455,7 @@ public class PasienCRUDPanel extends JPanel {
     }
 
     private void clearForm() {
-        txtPatientCode.setText("");
+        txtPatientCode.setText(""); // tetap kosong, tapi disabled
         txtFullName.setText("");
         txtBirthDate.setDate(null);
         cbGender.setSelectedIndex(0);
@@ -442,11 +469,7 @@ public class PasienCRUDPanel extends JPanel {
     }
 
     private boolean validateInput() {
-        if (txtPatientCode.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Kode Pasien tidak boleh kosong!");
-            txtPatientCode.requestFocus();
-            return false;
-        }
+        // ✅ Hapus validasi kode pasien
         if (txtFullName.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Nama Lengkap tidak boleh kosong!");
             txtFullName.requestFocus();
