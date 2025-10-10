@@ -2,18 +2,18 @@ package rumahsakitjiwa.model;
 
 public class Schedule {
     private int id;
-    private int doctorId;
-    private String days;        // e.g., "Senin,Rabu"
-    private String shift;       // e.g., "Pagi (06:00 - 14:00)"
+    private String doctorCode;   // ← GANTI DARI int doctorId
+    private String days;
+    private String shift;
     private java.sql.Time startTime;
     private java.sql.Time endTime;
 
     public Schedule() {}
 
-    public Schedule(int id, int doctorId, String days, String shift, 
+    public Schedule(int id, String doctorCode, String days, String shift, 
                     java.sql.Time startTime, java.sql.Time endTime) {
         this.id = id;
-        this.doctorId = doctorId;
+        this.doctorCode = doctorCode;
         this.days = days;
         this.shift = shift;
         this.startTime = startTime;
@@ -24,8 +24,8 @@ public class Schedule {
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    public int getDoctorId() { return doctorId; }
-    public void setDoctorId(int doctorId) { this.doctorId = doctorId; }
+    public String getDoctorCode() { return doctorCode; }
+    public void setDoctorCode(String doctorCode) { this.doctorCode = doctorCode; }
 
     public String getDays() { return days; }
     public void setDays(String days) { this.days = days; }
