@@ -204,8 +204,8 @@ public class ScheduleManagementPanel extends JPanel {
         isFirstLoad = true;
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT s.id, d.full_name, s.days, s.shift " +
-                         "FROM schedules s JOIN doctors d ON s.doctor_code = d.doctor_code ORDER BY d.full_name";
+           String sql = "SELECT s.id, d.full_name, s.days, s.shift " +
+             "FROM schedules s JOIN doctors d ON s.doctor_code = d.doctor_code";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

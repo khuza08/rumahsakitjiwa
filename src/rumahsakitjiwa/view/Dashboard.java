@@ -128,25 +128,27 @@ public class Dashboard extends JPanel {
     }
 
     
-    private int getSchedulesToday() {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            // Mendapatkan nama hari ini dalam bahasa Indonesia
-            String today = java.time.LocalDate.now()
-                .getDayOfWeek()
-                .getDisplayName(java.time.format.TextStyle.FULL, new java.util.Locale("id", "ID"));
-            
-            String sql = "SELECT COUNT(*) AS count FROM schedules " +
-                         "WHERE day_of_week = ? AND is_active = TRUE";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, today);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt("count");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error getting today's schedule count: " + e.getMessage());
+   private int getSchedulesToday() {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        // Mendapatkan nama hari ini dalam bahasa Indonesia
+        String today = java.time.LocalDate.now()
+            .getDayOfWeek()
+            .getDisplayName(java.time.format.TextStyle.FULL, new java.util.Locale("id", "ID"));
+        
+        // Cek apakah kolom 'days' mengandung hari ini
+        // Gunakan LIKE dengan pola: '%HariIni%'
+        String sql = "SELECT COUNT(*) AS count FROM schedules " +
+                     "WHERE days LIKE ? AND is_active = TRUE";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setString(1, "%" + today + "%"); // Contoh: "%Senin%"
+        ResultSet rs = pstmt.executeQuery();
+        
+        if (rs.next()) {
+            return rs.getInt("count");
         }
-        return 0;
+    } catch (SQLException e) {
+        System.err.println("Error getting today's schedule count: " + e.getMessage());
     }
+    return 0;
+}
 }
