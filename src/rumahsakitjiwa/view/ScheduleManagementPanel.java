@@ -13,7 +13,7 @@ import rumahsakitjiwa.model.Schedule;
 
 public class ScheduleManagementPanel extends JPanel {
     private JComboBox<Integer> cbDoctors;
-    private JTextField txtDoctorCode; // <-- Field baru
+    private JTextField txtDoctorCode;
     private JCheckBox[] dayBoxes;
     private JComboBox<String> cbShift;
     private JButton btnAddSchedule, btnUpdateSchedule, btnDeleteSchedule, btnClearForm;
@@ -23,13 +23,14 @@ public class ScheduleManagementPanel extends JPanel {
     private Dashboard dashboard;
     private boolean isFirstLoad = true;
 
-    private static final String[] SHIFTS = {
-        "Pagi (06:00 - 14:00)",
-        "Siang (14:00 - 22:00)",
-        "Malam (22:00 - 06:00)"
-    };
+    // Mapping shift ke waktu nyata
+    private static final Map<String, String[]> SHIFT_TIMES = new HashMap<>();
+    static {
+        SHIFT_TIMES.put("Pagi (06:00 - 14:00)", new String[]{"06:00:00", "14:00:00"});
+        SHIFT_TIMES.put("Siang (14:00 - 22:00)", new String[]{"14:00:00", "22:00:00"});
+        SHIFT_TIMES.put("Malam (22:00 - 06:00)", new String[]{"22:00:00", "06:00:00"});
+    }
 
-    // Simpan info dokter: ID -> {nama, kode}
     private static class DoctorInfo {
         String name;
         String code;
@@ -71,12 +72,12 @@ public class ScheduleManagementPanel extends JPanel {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value == null) {
                     setText("Pilih Dokter");
-                    setForeground(Color.GRAY); // Opsional: warna abu-abu untuk placeholder
+                    setForeground(Color.GRAY);
                 } else if (value instanceof Integer) {
                     Integer id = (Integer) value;
                     DoctorInfo info = doctorInfoMap.get(id);
                     setText(info != null ? info.name : "Dokter Tidak Diketahui");
-                    setForeground(Color.BLACK); // Reset warna
+                    setForeground(Color.BLACK);
                 }
                 return this;
             }
@@ -85,13 +86,13 @@ public class ScheduleManagementPanel extends JPanel {
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(cbDoctors, gbc);
 
-        // Kode Dokter (read-only)
+        // Kode Dokter
         gbc.gridx = 0; gbc.gridy = 1;
         formPanel.add(new JLabel("Kode Dokter:"), gbc);
         txtDoctorCode = new JTextField(15);
-        txtDoctorCode.setEditable(false);          // Tidak bisa diedit
-        txtDoctorCode.setFocusable(false);         // Tidak bisa dapat fokus (tidak bisa diklik)
-        txtDoctorCode.setBackground(UIManager.getColor("Label.background")); // Tampilan seperti label
+        txtDoctorCode.setEditable(false);
+        txtDoctorCode.setFocusable(false);
+        txtDoctorCode.setBackground(UIManager.getColor("Label.background"));
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(txtDoctorCode, gbc);
 
@@ -111,7 +112,7 @@ public class ScheduleManagementPanel extends JPanel {
         // Shift
         gbc.gridx = 0; gbc.gridy = 3;
         formPanel.add(new JLabel("Shift:"), gbc);
-        cbShift = new JComboBox<>(SHIFTS);
+        cbShift = new JComboBox<>(SHIFT_TIMES.keySet().toArray(new String[0]));
         gbc.gridx = 1; gbc.weightx = 1.0;
         formPanel.add(cbShift, gbc);
 
@@ -165,13 +166,13 @@ public class ScheduleManagementPanel extends JPanel {
             DoctorInfo info = doctorInfoMap.get((Integer) selected);
             txtDoctorCode.setText(info != null ? info.code : "");
         } else {
-            txtDoctorCode.setText(""); // Jika null atau tidak valid
+            txtDoctorCode.setText("");
         }
     }
 
     private void loadDoctors() {
         doctorInfoMap.clear();
-        cbDoctors.removeAllItems(); // Hapus semua item
+        cbDoctors.removeAllItems();
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT id, full_name, doctor_code FROM doctors ORDER BY full_name";
@@ -183,7 +184,7 @@ public class ScheduleManagementPanel extends JPanel {
                 String name = rs.getString("full_name");
                 String code = rs.getString("doctor_code");
                 doctorInfoMap.put(id, new DoctorInfo(name, code));
-                cbDoctors.addItem(id); // Tambahkan ID dokter saja
+                cbDoctors.addItem(id);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -191,12 +192,11 @@ public class ScheduleManagementPanel extends JPanel {
                     "Database Error", JOptionPane.ERROR_MESSAGE);
         }
 
-        // Set default: null (untuk trigger placeholder)
         cbDoctors.setSelectedItem(null);
     }
 
     private void resetFormToDefault() {
-        cbDoctors.setSelectedItem(null); // ← Ini akan trigger placeholder
+        cbDoctors.setSelectedItem(null);
         txtDoctorCode.setText("");
         for (JCheckBox box : dayBoxes) box.setSelected(false);
         cbShift.setSelectedIndex(0);
@@ -239,7 +239,6 @@ public class ScheduleManagementPanel extends JPanel {
         selectedScheduleId = (Integer) tableModel.getValueAt(selectedRow, 0);
         String doctorName = (String) tableModel.getValueAt(selectedRow, 1);
 
-        // Cari ID berdasarkan nama
         int doctorId = -1;
         for (Map.Entry<Integer, DoctorInfo> entry : doctorInfoMap.entrySet()) {
             if (entry.getValue().name.equals(doctorName)) {
@@ -250,9 +249,8 @@ public class ScheduleManagementPanel extends JPanel {
         if (doctorId != -1) {
             cbDoctors.setSelectedItem(doctorId);
         } else {
-            cbDoctors.setSelectedItem(null); // Jika tidak ditemukan, kosongkan
+            cbDoctors.setSelectedItem(null);
         }
-        // Kode dokter akan otomatis update via listener
 
         // Load days
         String daysStr = (String) tableModel.getValueAt(selectedRow, 2);
@@ -281,7 +279,7 @@ public class ScheduleManagementPanel extends JPanel {
 
     private boolean validateInput() {
         Object selected = cbDoctors.getSelectedItem();
-        if (selected == null) { // ← Bukan -1, tapi null
+        if (selected == null) {
             JOptionPane.showMessageDialog(this, "Pilih dokter!");
             return false;
         }
@@ -298,12 +296,23 @@ public class ScheduleManagementPanel extends JPanel {
         try {
             int doctorId = (Integer) cbDoctors.getSelectedItem();
             String days = getSelectedDays();
-            String shift = (String) cbShift.getSelectedItem();
+            String shiftText = (String) cbShift.getSelectedItem();
+
+            String[] times = SHIFT_TIMES.get(shiftText);
+            if (times == null) {
+                JOptionPane.showMessageDialog(this, "Shift tidak valid!");
+                return;
+            }
+
+            java.sql.Time startTime = java.sql.Time.valueOf(times[0]);
+            java.sql.Time endTime = java.sql.Time.valueOf(times[1]);
 
             Schedule schedule = new Schedule();
             schedule.setDoctorId(doctorId);
             schedule.setDays(days);
-            schedule.setShift(shift);
+            schedule.setShift(shiftText);
+            schedule.setStartTime(startTime);
+            schedule.setEndTime(endTime);
 
             if (insertSchedule(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal berhasil ditambahkan!");
@@ -329,13 +338,24 @@ public class ScheduleManagementPanel extends JPanel {
         try {
             int doctorId = (Integer) cbDoctors.getSelectedItem();
             String days = getSelectedDays();
-            String shift = (String) cbShift.getSelectedItem();
+            String shiftText = (String) cbShift.getSelectedItem();
+
+            String[] times = SHIFT_TIMES.get(shiftText);
+            if (times == null) {
+                JOptionPane.showMessageDialog(this, "Shift tidak valid!");
+                return;
+            }
+
+            java.sql.Time startTime = java.sql.Time.valueOf(times[0]);
+            java.sql.Time endTime = java.sql.Time.valueOf(times[1]);
 
             Schedule schedule = new Schedule();
             schedule.setId(selectedScheduleId);
             schedule.setDoctorId(doctorId);
             schedule.setDays(days);
-            schedule.setShift(shift);
+            schedule.setShift(shiftText);
+            schedule.setStartTime(startTime);
+            schedule.setEndTime(endTime);
 
             if (updateScheduleInDB(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal berhasil diupdate!");
@@ -378,14 +398,16 @@ public class ScheduleManagementPanel extends JPanel {
     }
 
     // --- DATABASE METHODS ---
-    // (Tidak berubah, tetap sama seperti sebelumnya)
+
     private boolean insertSchedule(Schedule schedule) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "INSERT INTO schedules (doctor_id, days, shift) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO schedules (doctor_id, days, shift, start_time, end_time) VALUES (?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, schedule.getDoctorId());
             pstmt.setString(2, schedule.getDays());
             pstmt.setString(3, schedule.getShift());
+            pstmt.setTime(4, schedule.getStartTime());
+            pstmt.setTime(5, schedule.getEndTime());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -396,12 +418,14 @@ public class ScheduleManagementPanel extends JPanel {
 
     private boolean updateScheduleInDB(Schedule schedule) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "UPDATE schedules SET doctor_id=?, days=?, shift=? WHERE id=?";
+            String sql = "UPDATE schedules SET doctor_id=?, days=?, shift=?, start_time=?, end_time=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, schedule.getDoctorId());
             pstmt.setString(2, schedule.getDays());
             pstmt.setString(3, schedule.getShift());
-            pstmt.setInt(4, schedule.getId());
+            pstmt.setTime(4, schedule.getStartTime());
+            pstmt.setTime(5, schedule.getEndTime());
+            pstmt.setInt(6, schedule.getId());
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
