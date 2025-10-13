@@ -11,17 +11,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Pasien;
-import com.toedter.calendar.JDateChooser;
 
 public class PasienCRUDPanel extends JPanel {
     private JTabbedPane tabbedPane;
     private DefaultTableModel tableModel;
     private JTable pasienTable;
     private JTextField txtPatientCode, txtFullName, txtAddress, txtPhone;
-    private JDateChooser txtBirthDate;
-    private JTextField txtEmergencyContact, txtEmergencyPhone;
-    private JComboBox<String> cbGender;
-    private JTextArea txtMedicalHistory;
+    private JTextField txtFamilyName, txtFamilyAddress, txtNIK;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedPasienId = -1;
     private Dashboard dashboard;
@@ -46,13 +42,11 @@ public class PasienCRUDPanel extends JPanel {
 
         // Nonaktifkan input untuk admin
         txtFullName.setEditable(isResepsionis);
-        txtBirthDate.setEnabled(isResepsionis);
-        cbGender.setEnabled(isResepsionis);
         txtAddress.setEditable(isResepsionis);
         txtPhone.setEditable(isResepsionis);
-        txtEmergencyContact.setEditable(isResepsionis);
-        txtEmergencyPhone.setEditable(isResepsionis);
-        txtMedicalHistory.setEditable(isResepsionis);
+        txtFamilyName.setEditable(isResepsionis);
+        txtFamilyAddress.setEditable(isResepsionis);
+        txtNIK.setEditable(isResepsionis);
 
         // Sembunyikan tombol CRUD untuk admin
         if (btnAdd != null) btnAdd.setVisible(isResepsionis);
@@ -152,31 +146,19 @@ public class PasienCRUDPanel extends JPanel {
         txtFullName = new JTextField(15);
         formPanel.add(txtFullName, gbc);
 
-        // Tanggal Lahir
+        // NIK
         gbc.gridx = 0; gbc.gridy = 3;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
-        formPanel.add(new JLabel("Tanggal Lahir:"), gbc);
+        formPanel.add(new JLabel("NIK:"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
-        txtBirthDate = new JDateChooser();
-        txtBirthDate.setDateFormatString("dd-MM-yyyy");
-        formPanel.add(txtBirthDate, gbc);
-
-        // Jenis Kelamin
-        gbc.gridx = 0; gbc.gridy = 4;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.weightx = 0;
-        formPanel.add(new JLabel("Jenis Kelamin:"), gbc);
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        cbGender = new JComboBox<>(new String[]{"Laki-laki", "Perempuan"});
-        formPanel.add(cbGender, gbc);
+        txtNIK = new JTextField(15);
+        formPanel.add(txtNIK, gbc);
 
         // Alamat
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0; gbc.gridy = 4;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
         formPanel.add(new JLabel("Alamat:"), gbc);
@@ -187,7 +169,7 @@ public class PasienCRUDPanel extends JPanel {
         formPanel.add(txtAddress, gbc);
 
         // No. Telepon
-        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridx = 0; gbc.gridy = 5;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
         formPanel.add(new JLabel("No. Telepon:"), gbc);
@@ -197,54 +179,31 @@ public class PasienCRUDPanel extends JPanel {
         txtPhone = new JTextField(15);
         formPanel.add(txtPhone, gbc);
 
-        // Kontak Darurat
+        // Nama Keluarga
+        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        formPanel.add(new JLabel("Nama Keluarga:"), gbc);
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        txtFamilyName = new JTextField(15);
+        formPanel.add(txtFamilyName, gbc);
+
+        // Alamat Keluarga
         gbc.gridx = 0; gbc.gridy = 7;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
-        formPanel.add(new JLabel("Kontak Darurat:"), gbc);
+        formPanel.add(new JLabel("Alamat Keluarga:"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
-        txtEmergencyContact = new JTextField(15);
-        formPanel.add(txtEmergencyContact, gbc);
-
-        // Telp. Darurat
-        gbc.gridx = 0; gbc.gridy = 8;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.weightx = 0;
-        formPanel.add(new JLabel("Telp. Darurat:"), gbc);
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        txtEmergencyPhone = new JTextField(15);
-        formPanel.add(txtEmergencyPhone, gbc);
-
-        // Riwayat Medis Label
-        gbc.gridx = 0;
-        gbc.gridy = 9;
-        gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.weightx = 0;
-        gbc.weighty = 0;
-        gbc.anchor = GridBagConstraints.WEST;
-        formPanel.add(new JLabel("Riwayat Medis:"), gbc);
-
-        // Riwayat Medis TextArea
-        gbc.gridx = 0;
-        gbc.gridy = 10;
-        gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        txtMedicalHistory = new JTextArea(6, 20);
-        txtMedicalHistory.setLineWrap(true);
-        txtMedicalHistory.setWrapStyleWord(true);
-        JScrollPane scrollHistory = new JScrollPane(txtMedicalHistory);
-        formPanel.add(scrollHistory, gbc);
+        txtFamilyAddress = new JTextField(15);
+        formPanel.add(txtFamilyAddress, gbc);
 
         // Button Panel
         gbc.gridx = 0;
-        gbc.gridy = 11;
+        gbc.gridy = 8;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
@@ -293,8 +252,7 @@ public class PasienCRUDPanel extends JPanel {
         tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        String[] columns = {"ID", "Kode Pasien", "Nama Lengkap", "Tanggal Lahir", "Jenis Kelamin",
-                "Alamat", "Telepon", "Kontak Darurat", "Telp. Darurat", "Riwayat Medis"};
+        String[] columns = {"ID", "Kode Pasien", "Nama Lengkap", "NIK", "Alamat", "Telepon", "Nama Keluarga", "Alamat Keluarga"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -416,21 +374,11 @@ public class PasienCRUDPanel extends JPanel {
                 String autoCode = generatePatientCode();
                 pasien.setPatientCode(autoCode);
                 pasien.setFullName(txtFullName.getText().trim());
-
-                Date selectedDate = txtBirthDate.getDate();
-                if (selectedDate != null) {
-                    LocalDate birthDate = selectedDate.toInstant()
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate();
-                    pasien.setBirthDate(birthDate);
-                }
-
-                pasien.setGender((String) cbGender.getSelectedItem());
+                pasien.setNIK(txtNIK.getText().trim());
                 pasien.setAddress(txtAddress.getText().trim());
                 pasien.setPhone(txtPhone.getText().trim());
-                pasien.setEmergencyContact(txtEmergencyContact.getText().trim());
-                pasien.setEmergencyPhone(txtEmergencyPhone.getText().trim());
-                pasien.setMedicalHistory(txtMedicalHistory.getText().trim());
+                pasien.setFamilyName(txtFamilyName.getText().trim());
+                pasien.setFamilyAddress(txtFamilyAddress.getText().trim());
 
                 if (insertPasien(pasien)) {
                     JOptionPane.showMessageDialog(this, "Data pasien berhasil ditambahkan!");
@@ -476,21 +424,11 @@ public class PasienCRUDPanel extends JPanel {
                 pasien.setId(selectedPasienId);
                 pasien.setPatientCode(txtPatientCode.getText().trim());
                 pasien.setFullName(txtFullName.getText().trim());
-
-                Date selectedDate = txtBirthDate.getDate();
-                if (selectedDate != null) {
-                    LocalDate birthDate = selectedDate.toInstant()
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate();
-                    pasien.setBirthDate(birthDate);
-                }
-
-                pasien.setGender((String) cbGender.getSelectedItem());
+                pasien.setNIK(txtNIK.getText().trim());
                 pasien.setAddress(txtAddress.getText().trim());
                 pasien.setPhone(txtPhone.getText().trim());
-                pasien.setEmergencyContact(txtEmergencyContact.getText().trim());
-                pasien.setEmergencyPhone(txtEmergencyPhone.getText().trim());
-                pasien.setMedicalHistory(txtMedicalHistory.getText().trim());
+                pasien.setFamilyName(txtFamilyName.getText().trim());
+                pasien.setFamilyAddress(txtFamilyAddress.getText().trim());
 
                 if (updatePasienInDB(pasien)) {
                     JOptionPane.showMessageDialog(this, "Data pasien berhasil diupdate!");
@@ -543,21 +481,19 @@ public class PasienCRUDPanel extends JPanel {
     private void clearForm() {
         txtPatientCode.setText("");
         txtFullName.setText("");
-        txtBirthDate.setDate(null);
-        cbGender.setSelectedIndex(0);
+        txtNIK.setText("");
         txtAddress.setText("");
         txtPhone.setText("");
-        txtEmergencyContact.setText("");
-        txtEmergencyPhone.setText("");
-        txtMedicalHistory.setText("");
+        txtFamilyName.setText("");
+        txtFamilyAddress.setText("");
         selectedPasienId = -1;
         pasienTable.clearSelection();
     }
 
     private boolean validateInput() {
-        if (txtBirthDate.getDate() == null) {
-            JOptionPane.showMessageDialog(this, "Tanggal lahir harus dipilih!");
-            txtBirthDate.requestFocus();
+        if (txtNIK.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "NIK tidak boleh kosong!");
+            txtNIK.requestFocus();
             return false;
         }
 
@@ -566,19 +502,10 @@ public class PasienCRUDPanel extends JPanel {
             txtAddress.requestFocus();
             return false;
         }
+        
         if (txtPhone.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "No. Telepon tidak boleh kosong!");
             txtPhone.requestFocus();
-            return false;
-        }
-        if (txtEmergencyContact.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Kontak Darurat tidak boleh kosong!");
-            txtEmergencyContact.requestFocus();
-            return false;
-        }
-        if (txtEmergencyPhone.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Telp. Darurat tidak boleh kosong!");
-            txtEmergencyPhone.requestFocus();
             return false;
         }
 
@@ -591,30 +518,11 @@ public class PasienCRUDPanel extends JPanel {
             selectedPasienId = (Integer) tableModel.getValueAt(selectedRow, 0);
             txtPatientCode.setText((String) tableModel.getValueAt(selectedRow, 1));
             txtFullName.setText((String) tableModel.getValueAt(selectedRow, 2));
-
-            String birthDateStr = (String) tableModel.getValueAt(selectedRow, 3);
-            if (birthDateStr == null || birthDateStr.isEmpty()) {
-                txtBirthDate.setDate(null);
-            } else {
-                try {
-                    LocalDate date = LocalDate.parse(birthDateStr, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-                    txtBirthDate.setDate(Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                } catch (Exception e) {
-                    txtBirthDate.setDate(null);
-                }
-            }
-
-            String gender = (String) tableModel.getValueAt(selectedRow, 4);
-            cbGender.setSelectedIndex(gender.equals("Laki-laki") ? 0 : 1);
-
-            txtAddress.setText((String) tableModel.getValueAt(selectedRow, 5));
-            txtPhone.setText((String) tableModel.getValueAt(selectedRow, 6));
-            txtEmergencyContact.setText((String) tableModel.getValueAt(selectedRow, 7));
-            txtEmergencyPhone.setText((String) tableModel.getValueAt(selectedRow, 8));
-
-            String medicalHistory = (String) tableModel.getValueAt(selectedRow, 9);
-            if (medicalHistory == null) medicalHistory = "";
-            txtMedicalHistory.setText(medicalHistory);
+            txtNIK.setText((String) tableModel.getValueAt(selectedRow, 3));
+            txtAddress.setText((String) tableModel.getValueAt(selectedRow, 4));
+            txtPhone.setText((String) tableModel.getValueAt(selectedRow, 5));
+            txtFamilyName.setText((String) tableModel.getValueAt(selectedRow, 6));
+            txtFamilyAddress.setText((String) tableModel.getValueAt(selectedRow, 7));
         }
     }
 
@@ -629,14 +537,11 @@ public class PasienCRUDPanel extends JPanel {
                         rs.getInt("id"),
                         rs.getString("patient_code"),
                         rs.getString("full_name"),
-                        rs.getDate("birth_date") != null ?
-                                rs.getDate("birth_date").toLocalDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) : "",
-                        rs.getString("gender"),
+                        rs.getString("nik"),
                         rs.getString("address"),
                         rs.getString("phone"),
-                        rs.getString("emergency_contact"),
-                        rs.getString("emergency_phone"),
-                        rs.getString("medical_history")
+                        rs.getString("family_name"),
+                        rs.getString("family_address")
                 };
                 tableModel.addRow(row);
             }
@@ -649,24 +554,16 @@ public class PasienCRUDPanel extends JPanel {
 
     private boolean insertPasien(Pasien pasien) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "INSERT INTO patients (patient_code, full_name, birth_date, gender, address, phone, " +
-                    "emergency_contact, emergency_phone, medical_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO patients (patient_code, full_name, nik, address, phone, " +
+                    "family_name, family_address) VALUES (?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, pasien.getPatientCode());
             pstmt.setString(2, pasien.getFullName());
-
-            if (pasien.getBirthDate() != null) {
-                pstmt.setDate(3, java.sql.Date.valueOf(pasien.getBirthDate()));
-            } else {
-                pstmt.setNull(3, Types.DATE);
-            }
-
-            pstmt.setString(4, pasien.getGender());
-            pstmt.setString(5, pasien.getAddress());
-            pstmt.setString(6, pasien.getPhone());
-            pstmt.setString(7, pasien.getEmergencyContact());
-            pstmt.setString(8, pasien.getEmergencyPhone());
-            pstmt.setString(9, pasien.getMedicalHistory());
+            pstmt.setString(3, pasien.getNIK());
+            pstmt.setString(4, pasien.getAddress());
+            pstmt.setString(5, pasien.getPhone());
+            pstmt.setString(6, pasien.getFamilyName());
+            pstmt.setString(7, pasien.getFamilyAddress());
 
             int result = pstmt.executeUpdate();
             return result > 0;
@@ -679,25 +576,17 @@ public class PasienCRUDPanel extends JPanel {
 
     private boolean updatePasienInDB(Pasien pasien) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "UPDATE patients SET patient_code=?, full_name=?, birth_date=?, gender=?, address=?, phone=?, " +
-                    "emergency_contact=?, emergency_phone=?, medical_history=? WHERE id=?";
+            String sql = "UPDATE patients SET patient_code=?, full_name=?, nik=?, address=?, phone=?, " +
+                    "family_name=?, family_address=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, pasien.getPatientCode());
             pstmt.setString(2, pasien.getFullName());
-
-            if (pasien.getBirthDate() != null) {
-                pstmt.setDate(3, java.sql.Date.valueOf(pasien.getBirthDate()));
-            } else {
-                pstmt.setNull(3, Types.DATE);
-            }
-
-            pstmt.setString(4, pasien.getGender());
-            pstmt.setString(5, pasien.getAddress());
-            pstmt.setString(6, pasien.getPhone());
-            pstmt.setString(7, pasien.getEmergencyContact());
-            pstmt.setString(8, pasien.getEmergencyPhone());
-            pstmt.setString(9, pasien.getMedicalHistory());
-            pstmt.setInt(10, pasien.getId());
+            pstmt.setString(3, pasien.getNIK());
+            pstmt.setString(4, pasien.getAddress());
+            pstmt.setString(5, pasien.getPhone());
+            pstmt.setString(6, pasien.getFamilyName());
+            pstmt.setString(7, pasien.getFamilyAddress());
+            pstmt.setInt(8, pasien.getId());
 
             int result = pstmt.executeUpdate();
             return result > 0;

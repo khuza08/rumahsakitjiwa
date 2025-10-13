@@ -1,22 +1,14 @@
 package rumahsakitjiwa.model;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-
 public class Pasien {
     private int id;
-    private String patientCode; // Ganti dari medicalRecordNumber
-    private String fullName;
-    private LocalDate birthDate;
-    private String address;
-    private String phone;
-    private String gender;
-    private String bloodType;
-    private String emergencyContact;
-    private String emergencyPhone;
-    private String medicalHistory;
-    private String allergies;
-    private boolean isActive;
+    private String patientCode; // Kode pasien
+    private String fullName; // Nama lengkap
+    private String NIK; // Nomor Induk Kependudukan
+    private String address; // Alamat
+    private String phone; // No. Telepon
+    private String familyName; // Nama keluarga
+    private String familyAddress; // Alamat keluarga
 
     public Pasien() {
     }
@@ -45,12 +37,12 @@ public class Pasien {
         this.fullName = fullName;
     }
 
-    public LocalDate getBirthDate() {
-        return birthDate;
+    public String getNIK() {
+        return NIK;
     }
 
-    public void setBirthDate(LocalDate birthDate) {
-        this.birthDate = birthDate;
+    public void setNIK(String NIK) {
+        this.NIK = NIK;
     }
 
     public String getAddress() {
@@ -69,74 +61,19 @@ public class Pasien {
         this.phone = phone;
     }
 
-    public String getGender() {
-        return gender;
+    public String getFamilyName() {
+        return familyName;
     }
 
-    public void setGender(String gender) {
-        this.gender = gender;
+    public void setFamilyName(String familyName) {
+        this.familyName = familyName;
     }
 
-    public String getBloodType() {
-        return bloodType;
+    public String getFamilyAddress() {
+        return familyAddress;
     }
 
-    public void setBloodType(String bloodType) {
-        this.bloodType = bloodType;
-    }
-
-    public String getEmergencyContact() {
-        return emergencyContact;
-    }
-
-    public void setEmergencyContact(String emergencyContact) {
-        this.emergencyContact = emergencyContact;
-    }
-
-    public String getEmergencyPhone() {
-        return emergencyPhone;
-    }
-
-    public void setEmergencyPhone(String emergencyPhone) {
-        this.emergencyPhone = emergencyPhone;
-    }
-
-    public String getMedicalHistory() {
-        return medicalHistory;
-    }
-
-    public void setMedicalHistory(String medicalHistory) {
-        this.medicalHistory = medicalHistory;
-    }
-
-    public String getAllergies() {
-        return allergies;
-    }
-
-    public void setAllergies(String allergies) {
-        this.allergies = allergies;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean active) {
-        isActive = active;
-    }
-
-    public String getFormattedBirthDate() {
-        if (birthDate != null) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-            return birthDate.format(formatter);
-        }
-        return "";
-    }
-
-    public void setBirthDateFromString(String dateStr) {
-        if (dateStr != null && !dateStr.isEmpty()) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-            this.birthDate = LocalDate.parse(dateStr, formatter);
-        }
+    public void setFamilyAddress(String familyAddress) {
+        this.familyAddress = familyAddress;
     }
 }
