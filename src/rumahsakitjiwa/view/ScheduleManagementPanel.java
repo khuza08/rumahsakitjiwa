@@ -12,14 +12,14 @@ import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Schedule;
 
 public class ScheduleManagementPanel extends JPanel {
-    private JComboBox<String> cbDoctors; // <-- Ganti dari Integer ke String
+    private JComboBox<String> cbDoctors;
     private JTextField txtDoctorCode;
     private JCheckBox[] dayBoxes;
     private JComboBox<String> cbShift;
     private JButton btnAddSchedule, btnUpdateSchedule, btnDeleteSchedule, btnClearForm;
     private JTable scheduleTable;
     private DefaultTableModel tableModel;
-    private int selectedScheduleId = -1;
+    private int selectedScheduleId = -1; // Tetap simpan ID internal untuk CRUD
     private Dashboard dashboard;
     private boolean isFirstLoad = true;
 
@@ -38,7 +38,7 @@ public class ScheduleManagementPanel extends JPanel {
             this.code = code;
         }
     }
-    private Map<String, DoctorInfo> doctorInfoMap = new HashMap<>(); // <-- Ganti dari Integer ke String
+    private Map<String, DoctorInfo> doctorInfoMap = new HashMap<>();
 
     public ScheduleManagementPanel() {
         initComponents();
@@ -135,8 +135,8 @@ public class ScheduleManagementPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         formPanel.add(buttonPanel, gbc);
 
-        // Table
-        String[] columns = {"ID", "Dokter", "Hari", "Shift"};
+        // ✅ GANTI KOLOM JADI "Kode Dokter"
+        String[] columns = {"Kode Dokter", "Dokter", "Hari", "Shift"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -204,14 +204,16 @@ public class ScheduleManagementPanel extends JPanel {
         isFirstLoad = true;
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
-           String sql = "SELECT s.id, d.full_name, s.days, s.shift " +
-             "FROM schedules s JOIN doctors d ON s.doctor_code = d.doctor_code";
+            // ✅ Ambil doctor_code dari tabel doctors
+            String sql = "SELECT s.id, d.doctor_code, d.full_name, s.days, s.shift " +
+                         "FROM schedules s JOIN doctors d ON s.doctor_code = d.doctor_code ORDER BY d.full_name";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
+                // ✅ Tampilkan doctor_code di kolom pertama
                 Object[] row = {
-                    rs.getInt("id"),
+                    rs.getString("doctor_code"), // ← Kolom "Kode Dokter"
                     rs.getString("full_name"),
                     rs.getString("days"),
                     rs.getString("shift")
@@ -234,22 +236,30 @@ public class ScheduleManagementPanel extends JPanel {
         int selectedRow = scheduleTable.getSelectedRow();
         if (selectedRow < 0) return;
 
-        selectedScheduleId = (Integer) tableModel.getValueAt(selectedRow, 0);
-        String doctorName = (String) tableModel.getValueAt(selectedRow, 1);
-
-        // Cari kode dokter berdasarkan nama
-        String doctorCode = null;
-        for (Map.Entry<String, DoctorInfo> entry : doctorInfoMap.entrySet()) {
-            if (entry.getValue().name.equals(doctorName)) {
-                doctorCode = entry.getKey();
-                break;
+        // ✅ Ambil schedule.id berdasarkan doctor_code + hari + shift
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT s.id FROM schedules s " +
+                         "WHERE s.doctor_code = ? AND s.days = ? AND s.shift = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, (String) tableModel.getValueAt(selectedRow, 0)); // Kode Dokter
+            pstmt.setString(2, (String) tableModel.getValueAt(selectedRow, 2)); // Hari
+            pstmt.setString(3, (String) tableModel.getValueAt(selectedRow, 3)); // Shift
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                selectedScheduleId = rs.getInt("id");
+            } else {
+                selectedScheduleId = -1;
+                return;
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            selectedScheduleId = -1;
+            return;
         }
-        if (doctorCode != null) {
-            cbDoctors.setSelectedItem(doctorCode);
-        } else {
-            cbDoctors.setSelectedItem(null);
-        }
+
+        // Load dokter
+        String doctorCode = (String) tableModel.getValueAt(selectedRow, 0);
+        cbDoctors.setSelectedItem(doctorCode);
 
         // Load days
         String daysStr = (String) tableModel.getValueAt(selectedRow, 2);
@@ -397,7 +407,6 @@ public class ScheduleManagementPanel extends JPanel {
     }
 
     // --- DATABASE METHODS ---
-
     private boolean insertSchedule(Schedule schedule) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "INSERT INTO schedules (doctor_code, days, shift, start_time, end_time) VALUES (?, ?, ?, ?, ?)";
