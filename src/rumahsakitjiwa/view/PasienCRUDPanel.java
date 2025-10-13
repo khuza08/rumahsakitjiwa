@@ -14,6 +14,7 @@ import rumahsakitjiwa.model.Pasien;
 import com.toedter.calendar.JDateChooser;
 
 public class PasienCRUDPanel extends JPanel {
+    private JTabbedPane tabbedPane;
     private DefaultTableModel tableModel;
     private JTable pasienTable;
     private JTextField txtPatientCode, txtFullName, txtAddress, txtPhone;
@@ -68,12 +69,35 @@ public class PasienCRUDPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
+        
+        // Buat tabbedPane
+        tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tabbedPane.setBackground(Color.WHITE);
+        
+        // Tab untuk data pasien
+        JPanel pasienPanel = createPasienPanel();
+        tabbedPane.addTab("Data Pasien", pasienPanel);
+        
+        // Tab untuk pasien inap
+        PasienInapPanel pasienInapPanel = new PasienInapPanel();
+        pasienInapPanel.setUserRole(userRole);
+        tabbedPane.addTab("Pasien Inap", pasienInapPanel);
+        
+        add(tabbedPane, BorderLayout.CENTER);
+    }
+    
+    private JPanel createPasienPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setOpaque(false);
+        
         JPanel formPanel = createFormPanel();
         JPanel tablePanel = createTablePanel();
 
-        add(formPanel, BorderLayout.WEST);
-        add(tablePanel, BorderLayout.CENTER);
+        mainPanel.add(formPanel, BorderLayout.WEST);
+        mainPanel.add(tablePanel, BorderLayout.CENTER);
+        
+        return mainPanel;
     }
 
     private JPanel createFormPanel() {
