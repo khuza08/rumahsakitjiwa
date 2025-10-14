@@ -31,10 +31,10 @@ public class main extends JFrame {
     private ScheduleManagementPanel scheduleManagementPanel;
     private ReportPanel reportPanel;
     
-    // Panel untuk resepsionis
-    private RegistrationPanel registrationPanel;
-    private AppointmentPanel appointmentPanel;
-    private QueuePanel queuePanel;
+    // Panel untuk resepsionis — DIHAPUS SESUAI PERMINTAAN
+    // private RegistrationPanel registrationPanel;
+    // private AppointmentPanel appointmentPanel;
+    // private QueuePanel queuePanel;
     
     private String userRole;
     private String userName;
@@ -117,18 +117,13 @@ public class main extends JFrame {
             contentPanel.add(reportPanel, "LAPORAN");
             
         } else if ("resepsionis".equals(userRole)) {
-            // Resepsionis: fokus pada pendaftaran dan penjadwalan
-            registrationPanel = new RegistrationPanel();
-            appointmentPanel = new AppointmentPanel();
-            queuePanel = new QueuePanel();
-            
-            contentPanel.add(registrationPanel, "PENDAFTARAN");
-            contentPanel.add(appointmentPanel, "JADWAL");
-            contentPanel.add(queuePanel, "ANTRIAN");
+            // Resepsionis: HANYA DASHBOARD + DATA PASIEN
             contentPanel.add(createContentPanel("Data Dokter", 
                 "Akses terbatas. Hubungi administrator untuk manajemen dokter."), "DOKTER");
             contentPanel.add(createContentPanel("Data Kamar", 
                 "Akses terbatas. Hubungi administrator untuk manajemen kamar."), "KAMAR");
+            contentPanel.add(createContentPanel("Jadwal", 
+                "Akses terbatas. Hubungi administrator untuk manajemen jadwal."), "JADWAL");
             contentPanel.add(createContentPanel("Laporan", 
                 "Akses terbatas. Hubungi administrator untuk laporan."), "LAPORAN");
         }
@@ -162,7 +157,6 @@ public class main extends JFrame {
         
         // Menu berdasarkan role
         if ("admin".equals(userRole)) {
-            // === ADMIN: TANPA "Data Pasien" ===
             String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Jadwal", "Laporan"};
             String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "JADWAL", "LAPORAN"};
             
@@ -175,9 +169,9 @@ public class main extends JFrame {
             }
             
         } else if ("resepsionis".equals(userRole)) {
-            // === RESEPSIONIS: DENGAN "Data Pasien" ===
-            String[] menuItems = {"Dashboard", "Data Pasien", "Pendaftaran Baru", "Jadwal Konsultasi", "Antrian Pasien"};
-            String[] menuKeys = {"DASHBOARD", "PASIEN", "PENDAFTARAN", "JADWAL", "ANTRIAN"};
+            // === RESEPSIONIS: HANYA "Dashboard" dan "Data Pasien" ===
+            String[] menuItems = {"Dashboard", "Data Pasien"};
+            String[] menuKeys = {"DASHBOARD", "PASIEN"};
             
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
@@ -602,78 +596,8 @@ public class main extends JFrame {
         return card;
     }
     
-    // Panel-panel untuk resepsionis
-    private class RegistrationPanel extends JPanel {
-        public RegistrationPanel() {
-            setLayout(new BorderLayout());
-            setBackground(new Color(255, 255, 255, 230));
-            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-            
-            JLabel titleLabel = new JLabel("Pendaftaran Pasien Baru", SwingConstants.CENTER);
-            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            add(titleLabel, BorderLayout.NORTH);
-            
-            JTextArea infoArea = new JTextArea(
-                "Panel ini digunakan untuk mendaftarkan pasien baru.\n\n" +
-                "Fitur yang tersedia:\n" +
-                "- Input data pasien baru\n" +
-                "- Pilih jenis kunjungan (rawat jalan/rawat inap)\n" +
-                "- Pilih dokter yang dituju\n" +
-                "- Generate nomor antrian"
-            );
-            infoArea.setEditable(false);
-            infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            add(new JScrollPane(infoArea), BorderLayout.CENTER);
-        }
-    }
-    
-    private class AppointmentPanel extends JPanel {
-        public AppointmentPanel() {
-            setLayout(new BorderLayout());
-            setBackground(new Color(255, 255, 255, 230));
-            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-            
-            JLabel titleLabel = new JLabel("Penjadwalan Konsultasi", SwingConstants.CENTER);
-            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            add(titleLabel, BorderLayout.NORTH);
-            
-            JTextArea infoArea = new JTextArea(
-                "Panel ini digunakan untuk mengelola jadwal konsultasi.\n\n" +
-                "Fitur yang tersedia:\n" +
-                "- Lihat jadwal dokter tersedia\n" +
-                "- Booking janji temu\n" +
-                "- Reschedule janji temu\n" +
-                "- Batalkan janji temu"
-            );
-            infoArea.setEditable(false);
-            infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            add(new JScrollPane(infoArea), BorderLayout.CENTER);
-        }
-    }
-    
-    private class QueuePanel extends JPanel {
-        public QueuePanel() {
-            setLayout(new BorderLayout());
-            setBackground(new Color(255, 255, 255, 230));
-            setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-            
-            JLabel titleLabel = new JLabel("Manajemen Antrian", SwingConstants.CENTER);
-            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-            add(titleLabel, BorderLayout.NORTH);
-            
-            JTextArea infoArea = new JTextArea(
-                "Panel ini digunakan untuk mengelola antrian pasien.\n\n" +
-                "Fitur yang tersedia:\n" +
-                "- Lihat antrian aktif\n" +
-                "- Panggil nomor antrian\n" +
-                "- Lihat estimasi waktu tunggu\n" +
-                "- Monitoring antrian per poli"
-            );
-            infoArea.setEditable(false);
-            infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            add(new JScrollPane(infoArea), BorderLayout.CENTER);
-        }
-    }
+    // Inner classes untuk panel resepsionis DIHAPUS
+    // RegistrationPanel, AppointmentPanel, QueuePanel tidak lagi digunakan
     
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new main().setVisible(true));
