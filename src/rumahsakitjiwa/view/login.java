@@ -13,7 +13,7 @@ public class login extends JFrame {
     public JTextField usernameField;
     public JPasswordField passwordField;
     public JButton loginButton;
-    private JButton togglePasswordButton; // Tombol untuk toggle visibility password
+    private JButton togglePasswordButton;
     private Point mousePoint;
     private Rectangle normalBounds;
     private JSplitPane splitPane;
@@ -148,10 +148,10 @@ public class login extends JFrame {
                 
                 // Gambar ikon user di dalam field
                 g2.setColor(new Color(0x6da395));
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                g2.setFont(new Font("Segoe Ui Symbol", Font.PLAIN, 16));
                 FontMetrics fm = g2.getFontMetrics();
                 int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
-                g2.drawString("👤", 15, iconY);
+                g2.drawString("👤", 15, iconY); // User symbol in Wingdings
                 
                 super.paintComponent(g);
                 g2.dispose();
@@ -160,7 +160,7 @@ public class login extends JFrame {
         usernameField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 15)); // Left padding lebih besar untuk ikon
         usernameField.setOpaque(false);
         usernameField.setForeground(new Color(0x6da395)); // White text on blue background
-        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        usernameField.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 14));
         usernameField.setCaretColor(Color.WHITE); // White cursor
         usernameField.setText("Username");
         
@@ -185,10 +185,10 @@ public class login extends JFrame {
                 
                 // Gambar ikon lock di dalam field
                 g2.setColor(new Color(0x6da395));
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                g2.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
                 FontMetrics fm = g2.getFontMetrics();
                 int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
-                g2.drawString("🔒", 15, iconY);
+                g2.drawString("🔒", 15, iconY); 
                 
                 g2.dispose();
             }
@@ -208,7 +208,7 @@ public class login extends JFrame {
         passwordField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 5)); // Left padding lebih besar untuk ikon
         passwordField.setOpaque(false);
         passwordField.setForeground(new Color(0x6da395)); // White text on blue background
-        passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        passwordField.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 14));
         passwordField.setCaretColor(Color.WHITE); // White cursor
         passwordField.setEchoChar((char) 0);
         passwordField.setText("Password");
