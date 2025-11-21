@@ -145,8 +145,8 @@ public class main extends JFrame {
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
         
         if ("admin".equals(userRole)) {
-            String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Jadwal", "Laporan"};
-            String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "JADWAL", "LAPORAN"};
+            String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Jadwal"};
+            String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "JADWAL"};
             
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
@@ -157,8 +157,8 @@ public class main extends JFrame {
             }
             
         } else if ("resepsionis".equals(userRole)) {
-            String[] menuItems = {"Dashboard", "Data Pasien"};
-            String[] menuKeys = {"DASHBOARD", "PASIEN"};
+            String[] menuItems = {"Dashboard", "Data Pasien", "Laporan"};
+            String[] menuKeys = {"DASHBOARD", "PASIEN", "LAPORAN"};
             
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];

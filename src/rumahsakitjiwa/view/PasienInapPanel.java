@@ -26,7 +26,7 @@ public class PasienInapPanel extends JPanel {
         initComponents();
         setupTable();
         loadPasienInapData();
-        applyRolePermissions(); // terapkan izin default (view-only)
+        applyRolePermissions(); 
     }
 
     // <<< TAMBAHKAN METHOD INI
