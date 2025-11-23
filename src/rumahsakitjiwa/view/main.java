@@ -28,6 +28,7 @@ public class main extends JFrame {
     private PasienCRUDPanel pasienCRUDPanel;
     private ScheduleManagementPanel scheduleManagementPanel;
     private ReportPanel reportPanel;
+    private ResepsionisCRUDPanel resepsionisCRUDPanel;
     
     private String userRole;
     private String userName;
@@ -96,13 +97,17 @@ public class main extends JFrame {
             roomCRUDPanel = new RoomCRUDPanel();
             doctorCRUDPanel = new DoctorCRUDPanel();
             scheduleManagementPanel = new ScheduleManagementPanel();
+            resepsionisCRUDPanel = new ResepsionisCRUDPanel();
             reportPanel = new ReportPanel();
             
             roomCRUDPanel.setDashboard(dashboardPanel);
+            resepsionisCRUDPanel.setDashboard(dashboardPanel); // refresh, mayne used?
+
             
             contentPanel.add(doctorCRUDPanel, "DOKTER");
             contentPanel.add(roomCRUDPanel, "KAMAR");
             contentPanel.add(scheduleManagementPanel, "JADWAL");
+            contentPanel.add(resepsionisCRUDPanel, "RESEPSIONIS");
             contentPanel.add(reportPanel, "LAPORAN");
             
         } else if ("resepsionis".equals(userRole)) {
@@ -193,10 +198,10 @@ public class main extends JFrame {
         sidebarPanel.add(Box.createRigidArea(new Dimension(0, 30))); // Jarak setelah macOS buttons
         
         // Menu Items
-        if ("admin".equals(userRole)) {
-            String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Jadwal"};
-            String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "JADWAL"};
-            
+            if ("admin".equals(userRole)) {
+                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal"};
+                String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "RESEPSIONIS", "JADWAL"};
+
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
                 JButton menuBtn = createMenuButton(menuItems[i]);
