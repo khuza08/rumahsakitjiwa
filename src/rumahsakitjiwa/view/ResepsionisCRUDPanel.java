@@ -1,6 +1,7 @@
 /*
  * Resepsionis CRUD Panel
- * Fields: NIR, Nama, Alamat, No. Tlp, Gender (L/P), Username, Password
+ * NIR: auto-generated R01, R02, ...
+ * No. Tlp: 10-13 digits only
  */
 package rumahsakitjiwa.view;
 
@@ -8,9 +9,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.sql.*;
-import java.util.Arrays;
 import rumahsakitjiwa.database.DatabaseConnection;
 
 public class ResepsionisCRUDPanel extends JPanel {
@@ -75,6 +74,8 @@ public class ResepsionisCRUDPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 1;
         formPanel.add(new JLabel("NIR:"), gbc);
         txtNIR = new JTextField(15);
+        txtNIR.setEditable(false); // 🔒 Tidak bisa diubah manual
+        txtNIR.setBackground(new Color(240, 240, 240)); // Greyed out look
         gbc.gridx = 1;
         formPanel.add(txtNIR, gbc);
 
@@ -135,7 +136,30 @@ public class ResepsionisCRUDPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
 
+        // Generate NIR otomatis untuk form baru
+        generateNextNIR();
+
         return formPanel;
+    }
+
+    // 🔢 Generate NIR berikutnya: R01, R02, ..., R100, dst.
+    private void generateNextNIR() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT MAX(CAST(SUBSTRING(nir, 2) AS UNSIGNED)) as max_num FROM resepsionis WHERE nir LIKE 'R%'";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            int nextNum = 1;
+            if (rs.next()) {
+                int max = rs.getInt("max_num");
+                if (!rs.wasNull()) {
+                    nextNum = max + 1;
+                }
+            }
+            txtNIR.setText(String.format("R%02d", nextNum));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            txtNIR.setText("R01"); // fallback
+        }
     }
 
     private JPanel createTablePanel() {
@@ -233,15 +257,28 @@ public class ResepsionisCRUDPanel extends JPanel {
         return button;
     }
 
+    // ✅ Validasi No. Tlp: 10-13 digit
+    private boolean isValidPhoneNumber(String phone) {
+        if (phone == null || phone.trim().isEmpty()) return false;
+        // Hanya ambil digit
+        String digitsOnly = phone.replaceAll("[^0-9]", "");
+        return digitsOnly.length() >= 10 && digitsOnly.length() <= 13;
+    }
+
     private boolean validateInput() {
-        if (txtNIR.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "NIR tidak boleh kosong!");
-            txtNIR.requestFocus();
-            return false;
-        }
         if (txtNama.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Nama tidak boleh kosong!");
             txtNama.requestFocus();
+            return false;
+        }
+        if (txtNoTlp.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No. Tlp tidak boleh kosong!");
+            txtNoTlp.requestFocus();
+            return false;
+        }
+        if (!isValidPhoneNumber(txtNoTlp.getText().trim())) {
+            JOptionPane.showMessageDialog(this, "No. Tlp harus 10-13 digit angka!");
+            txtNoTlp.requestFocus();
             return false;
         }
         if (txtUsername.getText().trim().isEmpty()) {
@@ -249,7 +286,7 @@ public class ResepsionisCRUDPanel extends JPanel {
             txtUsername.requestFocus();
             return false;
         }
-        if (Arrays.equals(((JPasswordField) txtPassword).getPassword(), new char[0])) {
+        if (new String(((JPasswordField) txtPassword).getPassword()).trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Password tidak boleh kosong!");
             txtPassword.requestFocus();
             return false;
@@ -266,7 +303,8 @@ public class ResepsionisCRUDPanel extends JPanel {
             pstmt.setString(1, txtNIR.getText().trim());
             pstmt.setString(2, txtNama.getText().trim());
             pstmt.setString(3, txtAlamat.getText().trim());
-            pstmt.setString(4, txtNoTlp.getText().trim());
+            // Simpan no_tlp sebagai digit saja (opsional)
+            pstmt.setString(4, txtNoTlp.getText().trim().replaceAll("[^0-9]", ""));
             pstmt.setString(5, (String) cbGender.getSelectedItem());
             pstmt.setString(6, txtUsername.getText().trim());
             pstmt.setString(7, new String(((JPasswordField) txtPassword).getPassword()));
@@ -293,16 +331,15 @@ public class ResepsionisCRUDPanel extends JPanel {
         if (!validateInput()) return;
 
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "UPDATE resepsionis SET nir=?, nama=?, alamat=?, no_tlp=?, gender=?, username=?, password=? WHERE id=?";
+            String sql = "UPDATE resepsionis SET nama=?, alamat=?, no_tlp=?, gender=?, username=?, password=? WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, txtNIR.getText().trim());
-            pstmt.setString(2, txtNama.getText().trim());
-            pstmt.setString(3, txtAlamat.getText().trim());
-            pstmt.setString(4, txtNoTlp.getText().trim());
-            pstmt.setString(5, (String) cbGender.getSelectedItem());
-            pstmt.setString(6, txtUsername.getText().trim());
-            pstmt.setString(7, new String(((JPasswordField) txtPassword).getPassword()));
-            pstmt.setInt(8, selectedId);
+            pstmt.setString(1, txtNama.getText().trim());
+            pstmt.setString(2, txtAlamat.getText().trim());
+            pstmt.setString(3, txtNoTlp.getText().trim().replaceAll("[^0-9]", ""));
+            pstmt.setString(4, (String) cbGender.getSelectedItem());
+            pstmt.setString(5, txtUsername.getText().trim());
+            pstmt.setString(6, new String(((JPasswordField) txtPassword).getPassword()));
+            pstmt.setInt(7, selectedId);
 
             if (pstmt.executeUpdate() > 0) {
                 JOptionPane.showMessageDialog(this, "Data berhasil diupdate!");
@@ -347,7 +384,7 @@ public class ResepsionisCRUDPanel extends JPanel {
     }
 
     private void clearForm() {
-        txtNIR.setText("");
+        generateNextNIR(); // Auto-generate NIR baru
         txtNama.setText("");
         txtAlamat.setText("");
         txtNoTlp.setText("");
@@ -361,7 +398,7 @@ public class ResepsionisCRUDPanel extends JPanel {
     private void loadData() {
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT * FROM resepsionis ORDER BY nama";
+            String sql = "SELECT * FROM resepsionis ORDER BY nir";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -373,7 +410,6 @@ public class ResepsionisCRUDPanel extends JPanel {
                     rs.getString("no_tlp"),
                     rs.getString("gender"),
                     rs.getString("username")
-                    // password tidak ditampilkan di tabel
                 };
                 tableModel.addRow(row);
             }
@@ -393,8 +429,8 @@ public class ResepsionisCRUDPanel extends JPanel {
             txtNoTlp.setText((String) tableModel.getValueAt(selectedRow, 4));
             cbGender.setSelectedItem(tableModel.getValueAt(selectedRow, 5));
             txtUsername.setText((String) tableModel.getValueAt(selectedRow, 6));
-            // Password tidak di-load (untuk keamanan)
-            txtPassword.setText(""); // biarkan kosong atau beri placeholder
+            // Password tidak di-load (aman)
+            txtPassword.setText("");
         }
     }
 }
