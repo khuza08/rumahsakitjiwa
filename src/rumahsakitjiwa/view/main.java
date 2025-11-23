@@ -141,8 +141,10 @@ public class main extends JFrame {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x43786e));
-                // Fill dari top ke bottom tanpa rounded corner
-                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Buat rounded rectangle untuk sidebar dengan rounded di kiri atas dan kiri bawah
+                g2d.fillRoundRect(0, 0, getWidth() + 20, getHeight(), 20, 20);
+                
                 g2d.dispose();
             }
         };
