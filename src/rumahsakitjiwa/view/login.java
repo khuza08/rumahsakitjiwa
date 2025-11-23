@@ -1,7 +1,7 @@
 package rumahsakitjiwa.view;
+
 import javax.swing.*;
 import com.formdev.flatlaf.FlatLightLaf;
-import rumahsakitjiwa.view.main;
 import rumahsakitjiwa.database.DatabaseConnection;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -28,11 +28,10 @@ public class login extends JFrame {
     public login() {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
-            // Konfigurasi untuk rounded components
-            UIManager.put("Button.arc", 30); // Lebih rounded untuk button
-            UIManager.put("TextComponent.arc", 25); // Lebih rounded untuk text fields
+            UIManager.put("Button.arc", 30);
+            UIManager.put("TextComponent.arc", 25);
             UIManager.put("Component.arc", 25);
-            UIManager.put("Button.margin", new Insets(12, 20, 12, 20)); // Padding button
+            UIManager.put("Button.margin", new Insets(12, 20, 12, 20));
         } catch (Exception ex) {
             System.err.println("Gagal load FlatLaf");
         }
@@ -84,7 +83,6 @@ public class login extends JFrame {
         macOSButtons.add(maximizeBtn);
         leftTopPanel.add(macOSButtons, BorderLayout.WEST);
 
-        // Load logo dengan penanganan error
         JLabel logo;
         try {
             ImageIcon logoIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/medicare.png"));
@@ -96,7 +94,6 @@ public class login extends JFrame {
             logo.setHorizontalAlignment(SwingConstants.CENTER);
         } catch (Exception e) {
             System.err.println("Error loading logo: " + e.getMessage());
-            // Fallback to text if logo not found
             logo = new JLabel("MEDICARE", SwingConstants.CENTER);
             logo.setFont(new Font("Segoe UI", Font.BOLD, 24));
             logo.setForeground(Color.WHITE);
@@ -124,72 +121,55 @@ public class login extends JFrame {
         gbc.insets = new Insets(12, 12, 12, 12);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Title
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         JLabel titleLabel = new JLabel("Medicare Login Portal", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(0x1e3c35)); // Blue color
+        titleLabel.setForeground(new Color(0x1e3c35));
         rightPanel.add(titleLabel, gbc);
 
-        // Username - hapus label terpisah
         gbc.gridwidth = 1;
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
 
-        // ROUNDED USERNAME FIELD dengan ikon di dalam
         usernameField = new JTextField(15) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Background rounded
-                g2.setColor(new Color(0x43786e)); // Blue background with transparency
+                g2.setColor(new Color(0x43786e));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
-                
-                // Gambar ikon user di dalam field
                 g2.setColor(new Color(0x6da395));
                 g2.setFont(new Font("Segoe Ui Symbol", Font.PLAIN, 16));
                 FontMetrics fm = g2.getFontMetrics();
                 int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
-                g2.drawString("👤", 15, iconY); // User symbol in Wingdings
-                
+                g2.drawString("👤", 15, iconY);
                 super.paintComponent(g);
                 g2.dispose();
             }
         };
-        usernameField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 15)); // Left padding lebih besar untuk ikon
+        usernameField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 15));
         usernameField.setOpaque(false);
-        usernameField.setForeground(new Color(0x6da395)); // White text on blue background
+        usernameField.setForeground(new Color(0x6da395));
         usernameField.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 14));
-        usernameField.setCaretColor(Color.WHITE); // White cursor
+        usernameField.setCaretColor(Color.WHITE);
         usernameField.setText("Username");
-        
         setupPlaceholder(usernameField, "Username");
         usernameField.addActionListener(e -> passwordField.requestFocus());
-        
         rightPanel.add(usernameField, gbc);
 
-        // Password - hapus label terpisah
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         
-        // ROUNDED PASSWORD CONTAINER dengan ikon di dalam
         JPanel passwordContainer = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Background rounded
-                g2.setColor(new Color(0x43786e)); // Blue background with transparency
+                g2.setColor(new Color(0x43786e));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
-                
-                // Gambar ikon lock di dalam field
                 g2.setColor(new Color(0x6da395));
                 g2.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
                 FontMetrics fm = g2.getFontMetrics();
                 int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
                 g2.drawString("🔒", 15, iconY); 
-                
                 g2.dispose();
             }
         };
@@ -205,24 +185,21 @@ public class login extends JFrame {
                 g2.dispose();
             }
         };
-        passwordField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 5)); // Left padding lebih besar untuk ikon
+        passwordField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 5));
         passwordField.setOpaque(false);
-        passwordField.setForeground(new Color(0x6da395)); // White text on blue background
+        passwordField.setForeground(new Color(0x6da395));
         passwordField.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 14));
-        passwordField.setCaretColor(Color.WHITE); // White cursor
+        passwordField.setCaretColor(Color.WHITE);
         passwordField.setEchoChar((char) 0);
         passwordField.setText("Password");
-        
         setupPasswordPlaceholder(passwordField);
         passwordField.addActionListener(e -> loginButton.doClick());
         
-        // Membuat tombol toggle password
         togglePasswordButton = new JButton("👁️") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
                 if (getModel().isPressed()) {
                     g2.setColor(new Color(0, 0, 0, 30));
                     g2.fillOval(5, 5, getWidth()-10, getHeight()-10);
@@ -230,7 +207,6 @@ public class login extends JFrame {
                     g2.setColor(new Color(0x6da395));
                     g2.fillOval(5, 5, getWidth()-10, getHeight()-10);
                 }
-                
                 super.paintComponent(g);
                 g2.dispose();
             }
@@ -246,29 +222,23 @@ public class login extends JFrame {
         
         passwordContainer.add(passwordField, BorderLayout.CENTER);
         passwordContainer.add(togglePasswordButton, BorderLayout.EAST);
-        
         rightPanel.add(passwordContainer, gbc);
 
-        // ROUNDED LOGIN BUTTON
         loginButton = new JButton("Login →") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Background solid color
                 Color bgColor;
                 if (getModel().isPressed()) {
-                    bgColor = new Color(0x1b3831); //  pressed
+                    bgColor = new Color(0x1b3831);
                 } else if (getModel().isRollover()) {
-                    bgColor = new Color(0x1e3c35); //  hover
+                    bgColor = new Color(0x1e3c35);
                 } else {
-                    bgColor = new Color(0x1e3c35); // Default
+                    bgColor = new Color(0x1e3c35);
                 }
-                
                 g2.setColor(bgColor);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
-                
                 super.paintComponent(g);
                 g2.dispose();
             }
@@ -281,11 +251,9 @@ public class login extends JFrame {
         loginButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         loginButton.setPreferredSize(new Dimension(200, 45));
         loginButton.addActionListener(e -> performLogin());
-        
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         rightPanel.add(loginButton, gbc);
 
-        // Database connection info
         gbc.gridy = 4;
         JLabel infoLabel = new JLabel("<html><div style='text-align:center;color:rgba(255,255,255,0.7);font-size:10px;'>" +
                 "Silakan login menggunakan akun anda</div></html>");
@@ -297,15 +265,12 @@ public class login extends JFrame {
         normalBounds = getBounds();
     }
     
-    // Metode untuk toggle visibility password
     private void togglePasswordVisibility() {
         if (passwordField.getEchoChar() == '★') {
-            // Password sedang disembunyikan, tampilkan password
             passwordField.setEchoChar((char) 0);
             togglePasswordButton.setText("🙈");
             togglePasswordButton.setToolTipText("Sembunyikan Password");
         } else {
-            // Password sedang ditampilkan, sembunyikan password
             passwordField.setEchoChar('★');
             togglePasswordButton.setText("👁️");
             togglePasswordButton.setToolTipText("Tampilkan Password");
@@ -326,7 +291,7 @@ public class login extends JFrame {
             public void focusLost(java.awt.event.FocusEvent e) {
                 if (field.getText().isEmpty()) {
                     field.setText(placeholder);
-                    field.setForeground(new Color(0x6da395)); // Light white for placeholder
+                    field.setForeground(new Color(0x6da395));
                 }
             }
         });
@@ -347,7 +312,7 @@ public class login extends JFrame {
                 if (field.getPassword().length == 0) {
                     field.setEchoChar((char) 0);
                     field.setText("Password");
-                    field.setForeground(new Color(0x6da395)); // Light white for placeholder
+                    field.setForeground(new Color(0x6da395));
                 }
             }
         });
@@ -371,7 +336,6 @@ public class login extends JFrame {
         
         UserInfo user = authenticateUser(username, password);
         if (user != null) {
-            // Set session info
             currentUsername = user.username;
             currentUserRole = user.role;
             currentFullName = user.fullName;
@@ -382,12 +346,10 @@ public class login extends JFrame {
                     mainWindow.setVisible(true);
                     this.dispose();
                     
-                    // Show welcome message
                     JOptionPane.showMessageDialog(mainWindow, 
                         "Selamat datang, " + currentFullName + "\nRole: " + currentUserRole, 
                         "Login Berhasil", 
                         JOptionPane.INFORMATION_MESSAGE);
-                        
                 } catch (Exception ex) {
                     showError("Error opening main window: " + ex.getMessage());
                     ex.printStackTrace();
@@ -399,7 +361,7 @@ public class login extends JFrame {
         }
     }
 
-    // ================= DATABASE AUTHENTICATION =================
+    // ================= DATABASE AUTHENTICATION (UPDATED) =================
     private static class UserInfo {
         String username, role, fullName, email;
         UserInfo(String username, String role, String fullName, String email) {
@@ -412,26 +374,44 @@ public class login extends JFrame {
 
     private UserInfo authenticateUser(String username, String password) {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT username, role, full_name, email FROM users WHERE username = ? AND password = ?";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, username);
-            pstmt.setString(2, password);
-            ResultSet rs = pstmt.executeQuery();
+            // 1. Cek di tabel `users` (admin)
+            String sqlAdmin = "SELECT username, role, full_name FROM users WHERE username = ? AND password = ?";
+            PreparedStatement psAdmin = conn.prepareStatement(sqlAdmin);
+            psAdmin.setString(1, username);
+            psAdmin.setString(2, password);
+            ResultSet rsAdmin = psAdmin.executeQuery();
             
-            if (rs.next()) {
+            if (rsAdmin.next()) {
                 return new UserInfo(
-                    rs.getString("username"),
-                    rs.getString("role"),
-                    rs.getString("full_name"),
-                    rs.getString("email")
+                    rsAdmin.getString("username"),
+                    rsAdmin.getString("role"),
+                    rsAdmin.getString("full_name"),
+                    null
                 );
             }
+
+            // 2. Cek di tabel `resepsionis` (resepsionis)
+            String sqlResepsionis = "SELECT username, role, nama FROM resepsionis WHERE username = ? AND password = ?";
+            PreparedStatement psResepsionis = conn.prepareStatement(sqlResepsionis);
+            psResepsionis.setString(1, username);
+            psResepsionis.setString(2, password);
+            ResultSet rsResepsionis = psResepsionis.executeQuery();
+            
+            if (rsResepsionis.next()) {
+                return new UserInfo(
+                    rsResepsionis.getString("username"),
+                    rsResepsionis.getString("role"),
+                    rsResepsionis.getString("nama"), // dari kolom 'nama'
+                    null
+                );
+            }
+            
         } catch (SQLException e) {
             System.err.println("Database authentication error: " + e.getMessage());
             showError("Koneksi database gagal. Silakan coba lagi.");
         }
         
-        return null;
+        return null; // login gagal
     }
 
     private void showError(String message) {
@@ -440,9 +420,8 @@ public class login extends JFrame {
 
     private void clearPassword() {
         passwordField.setText("Password");
-        passwordField.setForeground(new Color(255, 255, 255, 150)); // Light white for placeholder
+        passwordField.setForeground(new Color(255, 255, 255, 150));
         passwordField.setEchoChar((char) 0);
-        // Reset tombol mata ke keadaan semula
         togglePasswordButton.setText("👁️");
         togglePasswordButton.setToolTipText("Tampilkan Password");
         usernameField.requestFocus();
@@ -512,13 +491,11 @@ public class login extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 g2d.fillOval(0, 0, getWidth(), getHeight());
-                
                 if (getModel().isRollover()) {
                     g2d.setColor(new Color(0, 0, 0, 150));
                     g2d.setStroke(new BasicStroke(1.2f));
                     int centerX = getWidth() / 2;
                     int centerY = getHeight() / 2;
-                    
                     if (color.equals(new Color(0xFF5F57))) {
                         g2d.drawLine(centerX - 3, centerY - 3, centerX + 3, centerY + 3);
                         g2d.drawLine(centerX + 3, centerY - 3, centerX - 3, centerY + 3);
@@ -536,13 +513,11 @@ public class login extends JFrame {
                 g2d.dispose();
             }
         };
-        
         button.setPreferredSize(new Dimension(14, 14));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -564,7 +539,6 @@ public class login extends JFrame {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
         Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gd.getDefaultConfiguration());
-        
         return new Rectangle(
             screenBounds.x + insets.left,
             screenBounds.y + insets.top,
