@@ -465,53 +465,7 @@ public class main extends JFrame {
         }
         return 0;
     }
-    
-    private JPanel createDashboardPanel() {
-        JPanel panel = new JPanel(new GridLayout(2, 3, 20, 20));
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
-        
-        RoomStatistics stats = getRoomStatistics();
-        int totalPatients = getTotalPatients();
-        
-        panel.add(createStatCard("Total Pasien", String.valueOf(totalPatients), new Color(0x4CAF50)));
-        panel.add(createStatCard("Pasien Hari Ini", "12", new Color(0x2196F3)));
-        panel.add(createStatCard("Total Kamar", String.valueOf(stats.totalRooms), new Color(0x9C27B0)));
-        panel.add(createStatCard("Kamar Tersedia", String.valueOf(stats.availableRooms), new Color(0x00BCD4)));
-        panel.add(createStatCard("Antrian Hari Ini", "18", new Color(0xF44336)));
-        
-        return panel;
-    }
-    
-    private JPanel createStatCard(String title, String value, Color color) {
-        JPanel card = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(255, 255, 255, 220));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                g2d.setColor(color);
-                g2d.fillRoundRect(0, 0, getWidth(), 5, 15, 15);
-                g2d.dispose();
-            }
-        };
-        card.setOpaque(false);
-        card.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        
-        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        titleLabel.setForeground(new Color(100, 100, 100));
-        
-        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        valueLabel.setForeground(color);
-        
-        card.add(titleLabel, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
-        
-        return card;
-    }
+   
     
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new main().setVisible(true));
