@@ -83,11 +83,11 @@ public class RoomCRUDPanel extends JPanel {
 
         gbc.gridwidth = 1;
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 1;  
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         
         // 🔽 ROOM TYPE DROPDOWN
-        cbRoomType = new JComboBox<>(new String[]{"VIP 1", "VIP 2", "VIP 3", "Class A", "Class B"});
+        cbRoomType = new JComboBox<>(new String[]{"VIP", "Class A", "Class B"});
         cbRoomType.addActionListener(e -> loadAvailableRoomNumbers());
         gbc.gridx = 1;
         formPanel.add(cbRoomType, gbc);
@@ -149,32 +149,33 @@ public class RoomCRUDPanel extends JPanel {
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
+        
+        loadAvailableRoomNumbers();
 
         return formPanel;
     }
 
     // 💡 This method updates room number options based on selected type
-    private void loadAvailableRoomNumbers() {
-        cbRoomNumber.removeAllItems();
-        String selectedType = (String) cbRoomType.getSelectedItem();
-        if (selectedType == null) return;
+private void loadAvailableRoomNumbers() {
+    cbRoomNumber.removeAllItems();
+    String selectedType = (String) cbRoomType.getSelectedItem();
+    if (selectedType == null) return;
 
-        if (selectedType.startsWith("VIP")) {
-            // For VIP, room number = the type itself (e.g., "VIP 1")
-            // We allow all 3 regardless of DB (since only 3 exist)
-            // You could later check DB to disable taken ones, but for simplicity:
-            cbRoomNumber.addItem(selectedType); // e.g., "VIP 1"
-        } else if ("Class A".equals(selectedType)) {
-            // Generate a01 to a20 (adjust max as needed)
-            for (int i = 1; i <= 20; i++) {
-                cbRoomNumber.addItem(String.format("a%02d", i));
-            }
-        } else if ("Class B".equals(selectedType)) {
-            for (int i = 1; i <= 20; i++) {
-                cbRoomNumber.addItem(String.format("b%02d", i));
-            }
+    if ("VIP".equals(selectedType)) {
+        // Tampilkan VIP 1, VIP 2, VIP 3 sebagai NOMOR KAMAR
+        for (int i = 1; i <= 3; i++) {
+            cbRoomNumber.addItem("VIP " + i);
+        }
+    } else if ("Class A".equals(selectedType)) {
+        for (int i = 1; i <= 5; i++) {
+            cbRoomNumber.addItem("A" + String.format("%02d", i)); // A01, A02, ..., A05
+        }
+    } else if ("Class B".equals(selectedType)) {
+        for (int i = 1; i <= 5; i++) {
+            cbRoomNumber.addItem("B" + String.format("%02d", i)); // B01, ..., B05
         }
     }
+}
 
     private JPanel createTablePanel() {
         JPanel tablePanel = new JPanel(new BorderLayout()) {
