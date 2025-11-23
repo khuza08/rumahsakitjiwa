@@ -4,6 +4,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.sql.*;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -13,16 +15,21 @@ import rumahsakitjiwa.model.Room;
 public class RoomCRUDPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable roomTable;
-    private JTextField txtRoomNumber, txtRoomType, txtPrice;
+    
+    // 🔁 REPLACED: txtRoomNumber & txtRoomType → now dropdowns
+    private JComboBox<String> cbRoomType;   // e.g., "VIP 1", "Class A"
+    private JComboBox<String> cbRoomNumber; // e.g., "VIP 1", "a01", "b05"
+
     private JComboBox<String> cbStatus;
-    private JComboBox<String> cbFilterStatus; // filter status
+    private JComboBox<String> cbFilterStatus;
     private JTextArea txtDescription;
+    private JTextField txtPrice; // price remains text (with smart parsing)
+    
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedRoomId = -1;
     private final NumberFormat rupiahFormat = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
 
     private JLabel lblTotalRooms, lblAvailableRooms, lblOccupiedRooms, lblMaintenanceRooms;
-
     private Dashboard dashboard;
 
     public RoomCRUDPanel() {
@@ -77,17 +84,23 @@ public class RoomCRUDPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = 1;
-        formPanel.add(new JLabel("No. Kamar:"), gbc);
-        txtRoomNumber = new JTextField(15);
+        formPanel.add(new JLabel("Tipe Kamar:"), gbc);
+        
+        // 🔽 ROOM TYPE DROPDOWN
+        cbRoomType = new JComboBox<>(new String[]{"VIP 1", "VIP 2", "VIP 3", "Class A", "Class B"});
+        cbRoomType.addActionListener(e -> loadAvailableRoomNumbers());
         gbc.gridx = 1;
-        formPanel.add(txtRoomNumber, gbc);
+        formPanel.add(cbRoomType, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
-        formPanel.add(new JLabel("Tipe Kamar:"), gbc);
-        txtRoomType = new JTextField(15);
+        formPanel.add(new JLabel("No. Kamar:"), gbc);
+        
+        // 🔽 ROOM NUMBER DROPDOWN (dynamically filled)
+        cbRoomNumber = new JComboBox<>();
+        cbRoomNumber.setEditable(false); // safer: user picks, doesn't type
         gbc.gridx = 1;
-        formPanel.add(txtRoomType, gbc);
+        formPanel.add(cbRoomNumber, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -140,6 +153,29 @@ public class RoomCRUDPanel extends JPanel {
         return formPanel;
     }
 
+    // 💡 This method updates room number options based on selected type
+    private void loadAvailableRoomNumbers() {
+        cbRoomNumber.removeAllItems();
+        String selectedType = (String) cbRoomType.getSelectedItem();
+        if (selectedType == null) return;
+
+        if (selectedType.startsWith("VIP")) {
+            // For VIP, room number = the type itself (e.g., "VIP 1")
+            // We allow all 3 regardless of DB (since only 3 exist)
+            // You could later check DB to disable taken ones, but for simplicity:
+            cbRoomNumber.addItem(selectedType); // e.g., "VIP 1"
+        } else if ("Class A".equals(selectedType)) {
+            // Generate a01 to a20 (adjust max as needed)
+            for (int i = 1; i <= 20; i++) {
+                cbRoomNumber.addItem(String.format("a%02d", i));
+            }
+        } else if ("Class B".equals(selectedType)) {
+            for (int i = 1; i <= 20; i++) {
+                cbRoomNumber.addItem(String.format("b%02d", i));
+            }
+        }
+    }
+
     private JPanel createTablePanel() {
         JPanel tablePanel = new JPanel(new BorderLayout()) {
             @Override
@@ -188,7 +224,7 @@ public class RoomCRUDPanel extends JPanel {
         scrollPane.getViewport().setOpaque(false);
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel filter dan label jumlah kamar
+        // Filter & stats panel
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filterPanel.setOpaque(false);
 
@@ -214,11 +250,11 @@ public class RoomCRUDPanel extends JPanel {
         tablePanel.add(filterPanel, BorderLayout.SOUTH);
 
         setupTable();
-
         return tablePanel;
     }
 
     private void setupTable() {
+        // Hide ID column
         roomTable.getColumnModel().getColumn(0).setMinWidth(0);
         roomTable.getColumnModel().getColumn(0).setMaxWidth(0);
         roomTable.getColumnModel().getColumn(0).setPreferredWidth(0);
@@ -266,11 +302,16 @@ public class RoomCRUDPanel extends JPanel {
         if (validateInput()) {
             try {
                 Room room = new Room();
-                room.setRoomNumber(txtRoomNumber.getText().trim());
-                room.setRoomType(txtRoomType.getText().trim());
+                // 🔽 Get values from dropdowns instead of text fields
+                String roomNumber = (String) cbRoomNumber.getSelectedItem();
+                String roomType = (String) cbRoomType.getSelectedItem();
+
+                room.setRoomNumber(roomNumber);
+                room.setRoomType(roomType); // storing "VIP 1", "Class A", etc.
                 room.setStatus((String) cbStatus.getSelectedItem());
                 room.setPrice(parseFromRupiah(txtPrice.getText().trim()));
                 room.setDescription(txtDescription.getText().trim());
+
                 if (insertRoom(room)) {
                     JOptionPane.showMessageDialog(this, "Data kamar berhasil ditambahkan!");
                     loadRoomData();
@@ -280,7 +321,7 @@ public class RoomCRUDPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "Gagal menambah data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Harga harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -294,11 +335,12 @@ public class RoomCRUDPanel extends JPanel {
             try {
                 Room room = new Room();
                 room.setId(selectedRoomId);
-                room.setRoomNumber(txtRoomNumber.getText().trim());
-                room.setRoomType(txtRoomType.getText().trim());
+                room.setRoomNumber((String) cbRoomNumber.getSelectedItem());
+                room.setRoomType((String) cbRoomType.getSelectedItem());
                 room.setStatus((String) cbStatus.getSelectedItem());
                 room.setPrice(parseFromRupiah(txtPrice.getText().trim()));
                 room.setDescription(txtDescription.getText().trim());
+
                 if (updateRoomInDB(room)) {
                     JOptionPane.showMessageDialog(this, "Data kamar berhasil diupdate!");
                     loadRoomData();
@@ -308,7 +350,7 @@ public class RoomCRUDPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "Gagal mengupdate data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Harga harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -334,8 +376,8 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private void clearForm() {
-        txtRoomNumber.setText("");
-        txtRoomType.setText("");
+        cbRoomType.setSelectedIndex(-1);
+        cbRoomNumber.removeAllItems();
         cbStatus.setSelectedIndex(0);
         txtPrice.setText("");
         txtDescription.setText("");
@@ -344,14 +386,14 @@ public class RoomCRUDPanel extends JPanel {
     }
 
     private boolean validateInput() {
-        if (txtRoomNumber.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No. Kamar tidak boleh kosong!");
-            txtRoomNumber.requestFocus();
+        if (cbRoomType.getSelectedItem() == null) {
+            JOptionPane.showMessageDialog(this, "Pilih Tipe Kamar!");
+            cbRoomType.requestFocus();
             return false;
         }
-        if (txtRoomType.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tipe Kamar tidak boleh kosong!");
-            txtRoomType.requestFocus();
+        if (cbRoomNumber.getSelectedItem() == null || ((String) cbRoomNumber.getSelectedItem()).isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pilih No. Kamar!");
+            cbRoomNumber.requestFocus();
             return false;
         }
         if (txtPrice.getText().trim().isEmpty()) {
@@ -366,15 +408,13 @@ public class RoomCRUDPanel extends JPanel {
                 txtPrice.requestFocus();
                 return false;
             }
-            // Check if price is too large for database
-            if (price > 9999999999.99) { // Adjust based on your database column type
+            if (price > 9999999999.99) {
                 JOptionPane.showMessageDialog(this, "Harga terlalu besar! Maksimal 9,999,999,999.99");
                 txtPrice.requestFocus();
                 return false;
             }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Format harga tidak valid! Gunakan format seperti '1200000', '1.200.000', '1,2jt', atau '100rb'", 
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             txtPrice.requestFocus();
             return false;
         }
@@ -418,7 +458,6 @@ public class RoomCRUDPanel extends JPanel {
                 tableModel.addRow(row);
             }
 
-            // Set label jumlah kamar
             lblTotalRooms.setText("Total Kamar: " + totalRooms);
             lblAvailableRooms.setText("Tersedia: " + countAvailable);
             lblOccupiedRooms.setText("Terisi: " + countOccupied);
@@ -435,12 +474,20 @@ public class RoomCRUDPanel extends JPanel {
         int selectedRow = roomTable.getSelectedRow();
         if (selectedRow >= 0) {
             selectedRoomId = (Integer) tableModel.getValueAt(selectedRow, 0);
-            txtRoomNumber.setText((String) tableModel.getValueAt(selectedRow, 1));
-            txtRoomType.setText((String) tableModel.getValueAt(selectedRow, 2));
+            String roomNumber = (String) tableModel.getValueAt(selectedRow, 1);
+            String roomType = (String) tableModel.getValueAt(selectedRow, 2);
+
+            // 🔽 Match room type to dropdown
+            cbRoomType.setSelectedItem(roomType);
+            // Trigger room number reload, then select current number
+            SwingUtilities.invokeLater(() -> {
+                cbRoomNumber.setSelectedItem(roomNumber);
+            });
+
             cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 3));
             String priceStr = (String) tableModel.getValueAt(selectedRow, 4);
             String cleanPrice = priceStr.replaceAll("[^\\d]", "");
-            txtPrice.setText(cleanPrice);
+            txtPrice.setText(cleanPrice.isEmpty() ? "0" : cleanPrice);
             txtDescription.setText((String) tableModel.getValueAt(selectedRow, 5));
         }
     }
@@ -449,48 +496,29 @@ public class RoomCRUDPanel extends JPanel {
         if (rupiahString == null || rupiahString.trim().isEmpty()) {
             return 0.0;
         }
-        
-        String lowerCaseString = rupiahString.toLowerCase().trim();
-        
+        String lower = rupiahString.toLowerCase().trim();
         try {
-            // Handle formats with "juta" or "jt"
-            if (lowerCaseString.contains("juta") || lowerCaseString.contains("jt")) {
-                // Extract the number part
-                String numberPart = lowerCaseString.replaceAll("juta|jt", "").trim();
-                // Replace comma with dot for decimal parsing
-                numberPart = numberPart.replace(",", ".");
-                double jutaValue = Double.parseDouble(numberPart);
-                return jutaValue * 1000000; // 1 juta = 1,000,000
-            } 
-            // Handle formats with "ribu" or "rb"
-            else if (lowerCaseString.contains("ribu") || lowerCaseString.contains("rb")) {
-                // Extract the number part
-                String numberPart = lowerCaseString.replaceAll("ribu|rb", "").trim();
-                // Replace comma with dot for decimal parsing
-                numberPart = numberPart.replace(",", ".");
-                double ribuValue = Double.parseDouble(numberPart);
-                return ribuValue * 1000; // 1 ribu = 1,000
-            }
-            // Standard format without words
-            else {
-                // Remove all non-digit characters except decimal point
-                String cleanString = rupiahString.replaceAll("[^\\d.]", "");
-                if (cleanString.isEmpty()) {
-                    return 0.0;
+            if (lower.contains("juta") || lower.contains("jt")) {
+                String num = lower.replaceAll("juta|jt", "").trim().replace(",", ".");
+                return Double.parseDouble(num) * 1_000_000;
+            } else if (lower.contains("ribu") || lower.contains("rb")) {
+                String num = lower.replaceAll("ribu|rb", "").trim().replace(",", ".");
+                return Double.parseDouble(num) * 1_000;
+            } else {
+                String clean = rupiahString.replaceAll("[^\\d.]", "");
+                if (clean.isEmpty()) return 0.0;
+                if (clean.chars().filter(ch -> ch == '.').count() > 1) {
+                    int first = clean.indexOf('.');
+                    clean = clean.substring(0, first) + clean.substring(first + 1).replace(".", "");
                 }
-                // Handle multiple decimal points (just take the first one)
-                if (cleanString.chars().filter(ch -> ch == '.').count() > 1) {
-                    int firstDotIndex = cleanString.indexOf('.');
-                    cleanString = cleanString.substring(0, firstDotIndex) + 
-                                 cleanString.substring(firstDotIndex + 1).replaceAll("\\.", "");
-                }
-                return Double.parseDouble(cleanString);
+                return Double.parseDouble(clean);
             }
         } catch (NumberFormatException e) {
-            throw new NumberFormatException("Format harga tidak valid! Gunakan format seperti '1200000', '1.200.000', '1,2jt', atau '100rb'");
+            throw new NumberFormatException("Format harga tidak valid! Gunakan '1200000', '1.2jt', '100rb', dll.");
         }
     }
 
+    // --- DB Methods (unchanged logic, just using Room model) ---
     private boolean insertRoom(Room room) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "INSERT INTO rooms (room_number, room_type, status, price, description) VALUES (?, ?, ?, ?, ?)";
@@ -500,9 +528,7 @@ public class RoomCRUDPanel extends JPanel {
             pstmt.setString(3, room.getStatus());
             pstmt.setDouble(4, room.getPrice());
             pstmt.setString(5, room.getDescription());
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -520,9 +546,7 @@ public class RoomCRUDPanel extends JPanel {
             pstmt.setDouble(4, room.getPrice());
             pstmt.setString(5, room.getDescription());
             pstmt.setInt(6, room.getId());
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -535,9 +559,7 @@ public class RoomCRUDPanel extends JPanel {
             String sql = "DELETE FROM rooms WHERE id=?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, id);
-
-            int result = pstmt.executeUpdate();
-            return result > 0;
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
