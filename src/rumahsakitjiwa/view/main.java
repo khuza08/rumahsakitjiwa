@@ -76,7 +76,6 @@ public class main extends JFrame {
         };
         mainPanel.setOpaque(false);
         
-        JPanel headerPanel = createHeaderPanel();
         JPanel sidebarPanel = createSidebarPanel();
         
         cardLayout = new CardLayout();
@@ -119,10 +118,17 @@ public class main extends JFrame {
         
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
-        centerPanel.add(sidebarPanel, BorderLayout.WEST);
-        centerPanel.add(contentPanel, BorderLayout.CENTER);
         
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
+        // Buat header panel yang akan di atas content area (tidak menutupi sidebar)
+        JPanel headerPanel = createHeaderPanel();
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setOpaque(false);
+        contentWrapper.add(headerPanel, BorderLayout.NORTH);
+        contentWrapper.add(contentPanel, BorderLayout.CENTER);
+        
+        centerPanel.add(sidebarPanel, BorderLayout.WEST);
+        centerPanel.add(contentWrapper, BorderLayout.CENTER);
+        
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         
         add(mainPanel, BorderLayout.CENTER);
@@ -135,6 +141,7 @@ public class main extends JFrame {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x43786e));
+                // Fill dari top ke bottom tanpa rounded corner
                 g2d.fillRect(0, 0, getWidth(), getHeight());
                 g2d.dispose();
             }
@@ -142,8 +149,48 @@ public class main extends JFrame {
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
         sidebarPanel.setPreferredSize(new Dimension(200, 0));
         sidebarPanel.setOpaque(false);
-        sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
+        sidebarPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 20, 15));
         
+        // macOS Buttons Panel di paling atas
+        JPanel macOSPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        macOSPanel.setOpaque(false);
+        macOSPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        
+        JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
+        JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
+        JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
+        
+        closeBtn.addActionListener(e -> {
+            if (clockTimer != null) clockTimer.stop();
+            dispose();
+            System.exit(0);
+        });
+        
+        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
+        
+        maximizeBtn.addActionListener(e -> {
+            if (isMaximized) {
+                setExtendedState(JFrame.NORMAL);
+                if (normalBounds != null) {
+                    setBounds(normalBounds);
+                }
+                isMaximized = false;
+            } else {
+                normalBounds = getBounds();
+                setExtendedState(JFrame.MAXIMIZED_BOTH);
+                isMaximized = true;
+            }
+            repaint();
+        });
+        
+        macOSPanel.add(closeBtn);
+        macOSPanel.add(minimizeBtn);
+        macOSPanel.add(maximizeBtn);
+        
+        sidebarPanel.add(macOSPanel);
+        sidebarPanel.add(Box.createRigidArea(new Dimension(0, 30))); // Jarak setelah macOS buttons
+        
+        // Menu Items
         if ("admin".equals(userRole)) {
             String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Jadwal"};
             String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "JADWAL"};
@@ -153,7 +200,7 @@ public class main extends JFrame {
                 JButton menuBtn = createMenuButton(menuItems[i]);
                 menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
                 sidebarPanel.add(menuBtn);
-                sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+                sidebarPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Jarak antar menu
             }
             
         } else if ("resepsionis".equals(userRole)) {
@@ -165,12 +212,13 @@ public class main extends JFrame {
                 JButton menuBtn = createMenuButton(menuItems[i]);
                 menuBtn.addActionListener(e -> cardLayout.show(contentPanel, menuKey));
                 sidebarPanel.add(menuBtn);
-                sidebarPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+                sidebarPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Jarak antar menu
             }
         }
         
         sidebarPanel.add(Box.createVerticalGlue());
         
+        sidebarPanel.add(Box.createRigidArea(new Dimension(0, 20))); // Jarak sebelum logout button
         JButton logoutBtn = createMenuButton("Logout");
         logoutBtn.setBackground(new Color(0xFF5F57));
         logoutBtn.addActionListener(e -> logout());
@@ -320,40 +368,6 @@ public class main extends JFrame {
         headerPanel.setOpaque(false);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 15, 10, 15));
         
-        JPanel macOSPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        macOSPanel.setOpaque(false);
-        
-        JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
-        JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
-        JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
-        
-        closeBtn.addActionListener(e -> {
-            if (clockTimer != null) clockTimer.stop();
-            dispose();
-            System.exit(0);
-        });
-        
-        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
-        
-        maximizeBtn.addActionListener(e -> {
-            if (isMaximized) {
-                setExtendedState(JFrame.NORMAL);
-                if (normalBounds != null) {
-                    setBounds(normalBounds);
-                }
-                isMaximized = false;
-            } else {
-                normalBounds = getBounds();
-                setExtendedState(JFrame.MAXIMIZED_BOTH);
-                isMaximized = true;
-            }
-            repaint();
-        });
-        
-        macOSPanel.add(closeBtn);
-        macOSPanel.add(minimizeBtn);
-        macOSPanel.add(maximizeBtn);
-        
         JLabel titleLabel = new JLabel("Sistem Resepsionis - Rumah Sakit Jiwa", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
@@ -377,7 +391,6 @@ public class main extends JFrame {
         infoPanel.add(timeLabel);
         infoPanel.add(dateLabel);
         
-        headerPanel.add(macOSPanel, BorderLayout.WEST);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         headerPanel.add(infoPanel, BorderLayout.EAST);
         
