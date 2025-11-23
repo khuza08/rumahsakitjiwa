@@ -155,25 +155,59 @@ public class RoomCRUDPanel extends JPanel {
         return formPanel;
     }
 
+    private java.util.Set<String> getAllExistingRoomNumbers() {
+    java.util.Set<String> existing = new java.util.HashSet<>();
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "SELECT room_number FROM rooms";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        ResultSet rs = pstmt.executeQuery();
+        while (rs.next()) {
+            existing.add(rs.getString("room_number"));
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return existing;
+}
+    
     // 💡 This method updates room number options based on selected type
 private void loadAvailableRoomNumbers() {
     cbRoomNumber.removeAllItems();
     String selectedType = (String) cbRoomType.getSelectedItem();
     if (selectedType == null) return;
 
+    // 🔥 Ambil semua room number yang sudah ada di DB
+    java.util.Set<String> existingRooms = getAllExistingRoomNumbers();
+
     if ("VIP".equals(selectedType)) {
-        // Tampilkan VIP 1, VIP 2, VIP 3 sebagai NOMOR KAMAR
         for (int i = 1; i <= 3; i++) {
-            cbRoomNumber.addItem("VIP " + i);
+            String roomNum = "VIP " + i;
+            if (!existingRooms.contains(roomNum)) {
+                cbRoomNumber.addItem(roomNum);
+            }
         }
     } else if ("Class A".equals(selectedType)) {
         for (int i = 1; i <= 5; i++) {
-            cbRoomNumber.addItem("A" + String.format("%02d", i)); // A01, A02, ..., A05
+            String roomNum = "A" + String.format("%02d", i);
+            if (!existingRooms.contains(roomNum)) {
+                cbRoomNumber.addItem(roomNum);
+            }
         }
     } else if ("Class B".equals(selectedType)) {
         for (int i = 1; i <= 5; i++) {
-            cbRoomNumber.addItem("B" + String.format("%02d", i)); // B01, ..., B05
+            String roomNum = "B" + String.format("%02d", i);
+            if (!existingRooms.contains(roomNum)) {
+                cbRoomNumber.addItem(roomNum);
+            }
         }
+    }
+
+    // Optional: jika semua sudah terpakai, beri petunjuk
+    if (cbRoomNumber.getItemCount() == 0) {
+        cbRoomNumber.addItem("-- Tidak ada kamar tersedia --");
+        cbRoomNumber.setEnabled(false);
+    } else {
+        cbRoomNumber.setEnabled(true);
     }
 }
 
@@ -317,6 +351,7 @@ private void loadAvailableRoomNumbers() {
                     JOptionPane.showMessageDialog(this, "Data kamar berhasil ditambahkan!");
                     loadRoomData();
                     clearForm();
+                    loadAvailableRoomNumbers();
                     if (dashboard != null) dashboard.refreshDashboard();
                 } else {
                     JOptionPane.showMessageDialog(this, "Gagal menambah data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -369,6 +404,7 @@ private void loadAvailableRoomNumbers() {
                 JOptionPane.showMessageDialog(this, "Data kamar berhasil dihapus!");
                 loadRoomData();
                 clearForm();
+                loadAvailableRoomNumbers();
                 if (dashboard != null) dashboard.refreshDashboard();
             } else {
                 JOptionPane.showMessageDialog(this, "Gagal menghapus data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -377,13 +413,14 @@ private void loadAvailableRoomNumbers() {
     }
 
     private void clearForm() {
-        cbRoomType.setSelectedIndex(-1);
+        cbRoomType.setSelectedIndex(0);
         cbRoomNumber.removeAllItems();
         cbStatus.setSelectedIndex(0);
         txtPrice.setText("");
         txtDescription.setText("");
         selectedRoomId = -1;
         roomTable.clearSelection();
+        loadAvailableRoomNumbers();
     }
 
     private boolean validateInput() {
