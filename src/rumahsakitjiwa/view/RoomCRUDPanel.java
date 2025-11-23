@@ -4,8 +4,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.*;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -16,14 +14,12 @@ public class RoomCRUDPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable roomTable;
     
-    // 🔁 REPLACED: txtRoomNumber & txtRoomType → now dropdowns
-    private JComboBox<String> cbRoomType;   // e.g., "VIP 1", "Class A"
-    private JComboBox<String> cbRoomNumber; // e.g., "VIP 1", "a01", "b05"
-
+    private JComboBox<String> cbRoomType;
+    private JComboBox<String> cbRoomNumber;
     private JComboBox<String> cbStatus;
     private JComboBox<String> cbFilterStatus;
     private JTextArea txtDescription;
-    private JTextField txtPrice; // price remains text (with smart parsing)
+    private JTextField txtPrice;
     
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private int selectedRoomId = -1;
@@ -31,6 +27,9 @@ public class RoomCRUDPanel extends JPanel {
 
     private JLabel lblTotalRooms, lblAvailableRooms, lblOccupiedRooms, lblMaintenanceRooms;
     private Dashboard dashboard;
+
+    // 🔑 Simpan tipe terakhir yang dipakai
+    private String currentRoomType = "VIP";
 
     public RoomCRUDPanel() {
         initComponents();
@@ -86,9 +85,12 @@ public class RoomCRUDPanel extends JPanel {
         gbc.gridy = 1;  
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         
-        // 🔽 ROOM TYPE DROPDOWN
+        // 🔽 ROOM TYPE DROPDOWN — dengan listener yang benar
         cbRoomType = new JComboBox<>(new String[]{"VIP", "Class A", "Class B"});
-        cbRoomType.addActionListener(e -> loadAvailableRoomNumbers());
+        cbRoomType.addActionListener(e -> {
+            currentRoomType = (String) cbRoomType.getSelectedItem();
+            loadAvailableRoomNumbers();
+        });
         gbc.gridx = 1;
         formPanel.add(cbRoomType, gbc);
 
@@ -96,9 +98,8 @@ public class RoomCRUDPanel extends JPanel {
         gbc.gridy = 2;
         formPanel.add(new JLabel("No. Kamar:"), gbc);
         
-        // 🔽 ROOM NUMBER DROPDOWN (dynamically filled)
         cbRoomNumber = new JComboBox<>();
-        cbRoomNumber.setEditable(false); // safer: user picks, doesn't type
+        cbRoomNumber.setEditable(false);
         gbc.gridx = 1;
         formPanel.add(cbRoomNumber, gbc);
 
@@ -150,66 +151,64 @@ public class RoomCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
         
+        // Load room numbers untuk tipe awal ("VIP")
         loadAvailableRoomNumbers();
 
         return formPanel;
     }
 
     private java.util.Set<String> getAllExistingRoomNumbers() {
-    java.util.Set<String> existing = new java.util.HashSet<>();
-    try (Connection conn = DatabaseConnection.getConnection()) {
-        String sql = "SELECT room_number FROM rooms";
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        ResultSet rs = pstmt.executeQuery();
-        while (rs.next()) {
-            existing.add(rs.getString("room_number"));
+        java.util.Set<String> existing = new java.util.HashSet<>();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT room_number FROM rooms";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                existing.add(rs.getString("room_number"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return existing;
     }
-    return existing;
-}
     
-    // 💡 This method updates room number options based on selected type
-private void loadAvailableRoomNumbers() {
-    cbRoomNumber.removeAllItems();
-    String selectedType = (String) cbRoomType.getSelectedItem();
-    if (selectedType == null) return;
+    private void loadAvailableRoomNumbers() {
+        cbRoomNumber.removeAllItems();
+        String selectedType = (String) cbRoomType.getSelectedItem();
+        if (selectedType == null) return;
 
-    // 🔥 Ambil semua room number yang sudah ada di DB
-    java.util.Set<String> existingRooms = getAllExistingRoomNumbers();
+        java.util.Set<String> existingRooms = getAllExistingRoomNumbers();
 
-    if ("VIP".equals(selectedType)) {
-        for (int i = 1; i <= 3; i++) {
-            String roomNum = "VIP " + i;
-            if (!existingRooms.contains(roomNum)) {
-                cbRoomNumber.addItem(roomNum);
+        if ("VIP".equals(selectedType)) {
+            for (int i = 1; i <= 3; i++) {
+                String roomNum = "VIP " + i;
+                if (!existingRooms.contains(roomNum)) {
+                    cbRoomNumber.addItem(roomNum);
+                }
+            }
+        } else if ("Class A".equals(selectedType)) {
+            for (int i = 1; i <= 5; i++) {
+                String roomNum = "A" + String.format("%02d", i);
+                if (!existingRooms.contains(roomNum)) {
+                    cbRoomNumber.addItem(roomNum);
+                }
+            }
+        } else if ("Class B".equals(selectedType)) {
+            for (int i = 1; i <= 5; i++) {
+                String roomNum = "B" + String.format("%02d", i);
+                if (!existingRooms.contains(roomNum)) {
+                    cbRoomNumber.addItem(roomNum);
+                }
             }
         }
-    } else if ("Class A".equals(selectedType)) {
-        for (int i = 1; i <= 5; i++) {
-            String roomNum = "A" + String.format("%02d", i);
-            if (!existingRooms.contains(roomNum)) {
-                cbRoomNumber.addItem(roomNum);
-            }
-        }
-    } else if ("Class B".equals(selectedType)) {
-        for (int i = 1; i <= 5; i++) {
-            String roomNum = "B" + String.format("%02d", i);
-            if (!existingRooms.contains(roomNum)) {
-                cbRoomNumber.addItem(roomNum);
-            }
+
+        if (cbRoomNumber.getItemCount() == 0) {
+            cbRoomNumber.addItem("-- Tidak ada kamar tersedia --");
+            cbRoomNumber.setEnabled(false);
+        } else {
+            cbRoomNumber.setEnabled(true);
         }
     }
-
-    // Optional: jika semua sudah terpakai, beri petunjuk
-    if (cbRoomNumber.getItemCount() == 0) {
-        cbRoomNumber.addItem("-- Tidak ada kamar tersedia --");
-        cbRoomNumber.setEnabled(false);
-    } else {
-        cbRoomNumber.setEnabled(true);
-    }
-}
 
     private JPanel createTablePanel() {
         JPanel tablePanel = new JPanel(new BorderLayout()) {
@@ -259,7 +258,6 @@ private void loadAvailableRoomNumbers() {
         scrollPane.getViewport().setOpaque(false);
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Filter & stats panel
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filterPanel.setOpaque(false);
 
@@ -289,7 +287,6 @@ private void loadAvailableRoomNumbers() {
     }
 
     private void setupTable() {
-        // Hide ID column
         roomTable.getColumnModel().getColumn(0).setMinWidth(0);
         roomTable.getColumnModel().getColumn(0).setMaxWidth(0);
         roomTable.getColumnModel().getColumn(0).setPreferredWidth(0);
@@ -337,12 +334,11 @@ private void loadAvailableRoomNumbers() {
         if (validateInput()) {
             try {
                 Room room = new Room();
-                // 🔽 Get values from dropdowns instead of text fields
                 String roomNumber = (String) cbRoomNumber.getSelectedItem();
                 String roomType = (String) cbRoomType.getSelectedItem();
 
                 room.setRoomNumber(roomNumber);
-                room.setRoomType(roomType); // storing "VIP 1", "Class A", etc.
+                room.setRoomType(roomType);
                 room.setStatus((String) cbStatus.getSelectedItem());
                 room.setPrice(parseFromRupiah(txtPrice.getText().trim()));
                 room.setDescription(txtDescription.getText().trim());
@@ -350,8 +346,9 @@ private void loadAvailableRoomNumbers() {
                 if (insertRoom(room)) {
                     JOptionPane.showMessageDialog(this, "Data kamar berhasil ditambahkan!");
                     loadRoomData();
+                    // 🔥 Simpan tipe terakhir yang dipakai
+                    currentRoomType = (String) cbRoomType.getSelectedItem();
                     clearForm();
-                    loadAvailableRoomNumbers();
                     if (dashboard != null) dashboard.refreshDashboard();
                 } else {
                     JOptionPane.showMessageDialog(this, "Gagal menambah data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -404,7 +401,6 @@ private void loadAvailableRoomNumbers() {
                 JOptionPane.showMessageDialog(this, "Data kamar berhasil dihapus!");
                 loadRoomData();
                 clearForm();
-                loadAvailableRoomNumbers();
                 if (dashboard != null) dashboard.refreshDashboard();
             } else {
                 JOptionPane.showMessageDialog(this, "Gagal menghapus data kamar!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -413,14 +409,14 @@ private void loadAvailableRoomNumbers() {
     }
 
     private void clearForm() {
-        cbRoomType.setSelectedIndex(0);
-        cbRoomNumber.removeAllItems();
+        // 🔥 Tetap di tipe terakhir, jangan reset ke "VIP"
+        cbRoomType.setSelectedItem(currentRoomType);
         cbStatus.setSelectedIndex(0);
         txtPrice.setText("");
         txtDescription.setText("");
         selectedRoomId = -1;
         roomTable.clearSelection();
-        loadAvailableRoomNumbers();
+        // loadAvailableRoomNumbers() dipanggil otomatis oleh listener
     }
 
     private boolean validateInput() {
@@ -515,9 +511,7 @@ private void loadAvailableRoomNumbers() {
             String roomNumber = (String) tableModel.getValueAt(selectedRow, 1);
             String roomType = (String) tableModel.getValueAt(selectedRow, 2);
 
-            // 🔽 Match room type to dropdown
             cbRoomType.setSelectedItem(roomType);
-            // Trigger room number reload, then select current number
             SwingUtilities.invokeLater(() -> {
                 cbRoomNumber.setSelectedItem(roomNumber);
             });
@@ -556,7 +550,6 @@ private void loadAvailableRoomNumbers() {
         }
     }
 
-    // --- DB Methods (unchanged logic, just using Room model) ---
     private boolean insertRoom(Room room) {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "INSERT INTO rooms (room_number, room_type, status, price, description) VALUES (?, ?, ?, ?, ?)";
