@@ -181,7 +181,7 @@ public class ResepsionisCRUDPanel extends JPanel {
         tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        String[] columns = {"ID", "NIR", "Nama", "Alamat", "No. Tlp", "Gender", "Username"};
+        String[] columns = {"ID", "NIR", "Nama", "Alamat", "No. Tlp", "Gender", "Username", "Password"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -409,7 +409,8 @@ public class ResepsionisCRUDPanel extends JPanel {
                     rs.getString("alamat"),
                     rs.getString("no_tlp"),
                     rs.getString("gender"),
-                    rs.getString("username")
+                    rs.getString("username"),
+                    rs.getString("Password")
                 };
                 tableModel.addRow(row);
             }
