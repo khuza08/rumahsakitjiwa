@@ -16,6 +16,7 @@ public class ResepsionisCRUDPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable resepsionisTable;
     
+    // Ganti JPasswordField menjadi JTextField agar teks terlihat
     private JTextField txtNIR, txtNama, txtAlamat, txtNoTlp, txtUsername, txtPassword;
     private JComboBox<String> cbGender;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
@@ -111,7 +112,7 @@ public class ResepsionisCRUDPanel extends JPanel {
 
         gbc.gridx = 0; gbc.gridy = 7;
         formPanel.add(new JLabel("Password:"), gbc);
-        txtPassword = new JPasswordField(15);
+        txtPassword = new JTextField(15); // Ganti JPasswordField menjadi JTextField
         gbc.gridx = 1;
         formPanel.add(txtPassword, gbc);
 
@@ -286,7 +287,8 @@ public class ResepsionisCRUDPanel extends JPanel {
             txtUsername.requestFocus();
             return false;
         }
-        if (new String(((JPasswordField) txtPassword).getPassword()).trim().isEmpty()) {
+        // Ganti validasi password sesuai JTextField
+        if (txtPassword.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Password tidak boleh kosong!");
             txtPassword.requestFocus();
             return false;
@@ -307,7 +309,8 @@ public class ResepsionisCRUDPanel extends JPanel {
             pstmt.setString(4, txtNoTlp.getText().trim().replaceAll("[^0-9]", ""));
             pstmt.setString(5, (String) cbGender.getSelectedItem());
             pstmt.setString(6, txtUsername.getText().trim());
-            pstmt.setString(7, new String(((JPasswordField) txtPassword).getPassword()));
+            // Ganti cara mengambil password sesuai JTextField
+            pstmt.setString(7, txtPassword.getText().trim());
 
             if (pstmt.executeUpdate() > 0) {
                 JOptionPane.showMessageDialog(this, "Data resepsionis berhasil ditambahkan!");
@@ -338,7 +341,8 @@ public class ResepsionisCRUDPanel extends JPanel {
             pstmt.setString(3, txtNoTlp.getText().trim().replaceAll("[^0-9]", ""));
             pstmt.setString(4, (String) cbGender.getSelectedItem());
             pstmt.setString(5, txtUsername.getText().trim());
-            pstmt.setString(6, new String(((JPasswordField) txtPassword).getPassword()));
+            // Ganti cara mengambil password sesuai JTextField
+            pstmt.setString(6, txtPassword.getText().trim());
             pstmt.setInt(7, selectedId);
 
             if (pstmt.executeUpdate() > 0) {
@@ -410,7 +414,7 @@ public class ResepsionisCRUDPanel extends JPanel {
                     rs.getString("no_tlp"),
                     rs.getString("gender"),
                     rs.getString("username"),
-                    rs.getString("Password")
+                    rs.getString("password") 
                 };
                 tableModel.addRow(row);
             }
@@ -430,8 +434,7 @@ public class ResepsionisCRUDPanel extends JPanel {
             txtNoTlp.setText((String) tableModel.getValueAt(selectedRow, 4));
             cbGender.setSelectedItem(tableModel.getValueAt(selectedRow, 5));
             txtUsername.setText((String) tableModel.getValueAt(selectedRow, 6));
-            // Password tidak di-load (aman)
-            txtPassword.setText("");
+            txtPassword.setText((String) tableModel.getValueAt(selectedRow, 7));
         }
     }
 }
