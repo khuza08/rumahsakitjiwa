@@ -23,6 +23,7 @@ public class ResepsionisCRUDPanel extends JPanel {
     
     private int selectedId = -1;
     private Dashboard dashboard;
+    private JTextField searchField;
 
     public ResepsionisCRUDPanel() {
         initComponents();
@@ -180,7 +181,23 @@ public class ResepsionisCRUDPanel extends JPanel {
         JLabel tableTitle = new JLabel("Daftar Resepsionis");
         tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
         tableTitle.setForeground(new Color(0x6da395));
-        tablePanel.add(tableTitle, BorderLayout.NORTH);
+
+        // Tambahkan panel pencarian
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        searchPanel.setOpaque(false);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        searchPanel.add(new JLabel("Cari Resepsionis:"));
+        searchField = new JTextField(20);
+        searchField.setToolTipText("Cari berdasarkan NIR, Nama, Alamat, atau Username");
+        searchPanel.add(searchField);
+
+        // Tambahkan panel judul dan pencarian ke bagian NORTH
+        JPanel titleAndSearchPanel = new JPanel(new BorderLayout());
+        titleAndSearchPanel.setOpaque(false);
+        titleAndSearchPanel.add(tableTitle, BorderLayout.CENTER);
+        titleAndSearchPanel.add(searchPanel, BorderLayout.EAST);
+
+        tablePanel.add(titleAndSearchPanel, BorderLayout.NORTH);
 
         String[] columns = {"ID", "NIR", "Nama", "Alamat", "No. Tlp", "Gender", "Username", "Password"};
         tableModel = new DefaultTableModel(columns, 0) {
@@ -217,9 +234,32 @@ public class ResepsionisCRUDPanel extends JPanel {
     }
 
     private void setupTable() {
+        // Buat dan tetapkan TableRowSorter
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter =
+            new javax.swing.table.TableRowSorter<>(tableModel);
+        resepsionisTable.setRowSorter(rowSorter);
+
         resepsionisTable.getColumnModel().getColumn(0).setMinWidth(0);
         resepsionisTable.getColumnModel().getColumn(0).setMaxWidth(0);
         resepsionisTable.getColumnModel().getColumn(0).setPreferredWidth(0);
+
+        // Tambahkan listener untuk live search
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+        });
     }
 
     private JButton createStyledButton(String text, Color color) {
@@ -400,6 +440,14 @@ public class ResepsionisCRUDPanel extends JPanel {
     }
 
     private void loadData() {
+        // Simpan status filter saat ini
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter
+            = (javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel>) resepsionisTable.getRowSorter();
+        javax.swing.RowFilter rowFilter = null;
+        if (rowSorter != null) {
+            rowFilter = rowSorter.getRowFilter();
+        }
+
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM resepsionis ORDER BY nir";
@@ -414,7 +462,7 @@ public class ResepsionisCRUDPanel extends JPanel {
                     rs.getString("no_tlp"),
                     rs.getString("gender"),
                     rs.getString("username"),
-                    rs.getString("password") 
+                    rs.getString("password")
                 };
                 tableModel.addRow(row);
             }
@@ -422,19 +470,45 @@ public class ResepsionisCRUDPanel extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal memuat data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        // Setelah memuat data baru, kembalikan filter jika ada
+        if (rowSorter != null) {
+            rowSorter.setRowFilter(rowFilter);
+        }
     }
 
     private void loadSelectedData() {
-        int selectedRow = resepsionisTable.getSelectedRow();
-        if (selectedRow >= 0) {
-            selectedId = (Integer) tableModel.getValueAt(selectedRow, 0);
-            txtNIR.setText((String) tableModel.getValueAt(selectedRow, 1));
-            txtNama.setText((String) tableModel.getValueAt(selectedRow, 2));
-            txtAlamat.setText((String) tableModel.getValueAt(selectedRow, 3));
-            txtNoTlp.setText((String) tableModel.getValueAt(selectedRow, 4));
-            cbGender.setSelectedItem(tableModel.getValueAt(selectedRow, 5));
-            txtUsername.setText((String) tableModel.getValueAt(selectedRow, 6));
-            txtPassword.setText((String) tableModel.getValueAt(selectedRow, 7));
+        int selectedViewRow = resepsionisTable.getSelectedRow();
+        if (selectedViewRow >= 0) {
+            // Konversi dari indeks tampilan ke indeks model sebenarnya
+            int selectedModelRow = resepsionisTable.convertRowIndexToModel(selectedViewRow);
+
+            selectedId = (Integer) tableModel.getValueAt(selectedModelRow, 0);
+            txtNIR.setText((String) tableModel.getValueAt(selectedModelRow, 1));
+            txtNama.setText((String) tableModel.getValueAt(selectedModelRow, 2));
+            txtAlamat.setText((String) tableModel.getValueAt(selectedModelRow, 3));
+            txtNoTlp.setText((String) tableModel.getValueAt(selectedModelRow, 4));
+            cbGender.setSelectedItem(tableModel.getValueAt(selectedModelRow, 5));
+            txtUsername.setText((String) tableModel.getValueAt(selectedModelRow, 6));
+            txtPassword.setText((String) tableModel.getValueAt(selectedModelRow, 7));
+        }
+    }
+
+    private void filterTable(String searchText) {
+        // Konversi teks pencarian ke huruf kecil untuk pencarian case-insensitive
+        String lowerSearchText = searchText.toLowerCase().trim();
+
+        // Dapatkan TableRowSorter untuk tabel
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter
+            = (javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel>) resepsionisTable.getRowSorter();
+
+        if (lowerSearchText.isEmpty()) {
+            // Jika tidak ada teks pencarian, tampilkan semua data
+            rowSorter.setRowFilter(null);
+        } else {
+            // Buat filter untuk mencocokkan teks di semua kolom (kecuali kolom ID yang tersembunyi)
+            // Kolom ID diabaikan karena tidak ditampilkan ke pengguna
+            rowSorter.setRowFilter(javax.swing.RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(lowerSearchText), 1, 2, 3, 4, 5, 6, 7)); // Kolom 1-7 (NIR ke atas)
         }
     }
 }
