@@ -13,6 +13,54 @@ import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.Pasien;
 
 public class PasienCRUDPanel extends JPanel {
+    // Kelas untuk membatasi input hanya angka pada NIK
+    private static class NumericDocument extends javax.swing.text.PlainDocument {
+        @Override
+        public void insertString(int offs, String str, javax.swing.text.AttributeSet a) throws javax.swing.text.BadLocationException {
+            if (str == null) return;
+
+            // Hanya izinkan karakter angka
+            for (char c : str.toCharArray()) {
+                if (!Character.isDigit(c)) {
+                    return; // Jangan masukkan karakter non-digit
+                }
+            }
+
+            super.insertString(offs, str, a);
+        }
+    }
+
+    // Kelas untuk membatasi input hanya angka minimal 10 digit pada No. Telepon
+    private static class PhoneDocument extends javax.swing.text.PlainDocument {
+        private final int minLength;
+
+        public PhoneDocument(int minLength) {
+            this.minLength = minLength;
+        }
+
+        @Override
+        public void insertString(int offs, String str, javax.swing.text.AttributeSet a) throws javax.swing.text.BadLocationException {
+            if (str == null) return;
+
+            // Ambil teks saat ini
+            String currentText = getText(0, getLength());
+            String newText = currentText.substring(0, offs) + str + currentText.substring(offs);
+
+            // Pastikan semua karakter adalah angka
+            for (char c : newText.toCharArray()) {
+                if (!Character.isDigit(c)) {
+                    return; // Jangan masukkan karakter non-digit
+                }
+            }
+
+            // Periksa panjang teks tidak melebihi maksimum yang wajar (misalnya 15 digit)
+            if (newText.length() > 15) {
+                return; // Jangan masukkan karakter jika sudah melebihi 15 digit
+            }
+
+            super.insertString(offs, str, a);
+        }
+    }
     private JTabbedPane tabbedPane;
     private DefaultTableModel tableModel;
     private JTable pasienTable;
@@ -155,6 +203,7 @@ public class PasienCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         txtNIK = new JTextField(15);
+        txtNIK.setDocument(new NumericDocument()); // Terapkan custom document untuk hanya angka
         formPanel.add(txtNIK, gbc);
 
         // Alamat
@@ -177,6 +226,7 @@ public class PasienCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         txtPhone = new JTextField(15);
+        txtPhone.setDocument(new PhoneDocument(10)); // Terapkan custom document untuk hanya angka minimal 10 digit
         formPanel.add(txtPhone, gbc);
 
         // Nama Keluarga
@@ -497,14 +547,30 @@ public class PasienCRUDPanel extends JPanel {
             return false;
         }
 
+        // Validasi NIK hanya angka (jika sudah dimasukkan)
+        String nik = txtNIK.getText().trim();
+        if (!nik.isEmpty() && !nik.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "NIK harus berisi angka saja!");
+            txtNIK.requestFocus();
+            return false;
+        }
+
         if (txtAddress.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Alamat tidak boleh kosong!");
             txtAddress.requestFocus();
             return false;
         }
-        
+
         if (txtPhone.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "No. Telepon tidak boleh kosong!");
+            txtPhone.requestFocus();
+            return false;
+        }
+
+        // Validasi panjang nomor telepon minimal 10 digit
+        String phone = txtPhone.getText().trim();
+        if (phone.length() < 10) {
+            JOptionPane.showMessageDialog(this, "No. Telepon harus minimal 10 digit angka!");
             txtPhone.requestFocus();
             return false;
         }

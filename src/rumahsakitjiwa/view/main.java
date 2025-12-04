@@ -376,7 +376,7 @@ public class main extends JFrame {
         headerPanel.setBorder(BorderFactory.createEmptyBorder(12, 15, 10, 15));
         
         JLabel titleLabel = new JLabel("Sistem Resepsionis - Rumah Sakit Jiwa", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         titleLabel.setForeground(Color.WHITE);
         
         JPanel infoPanel = new JPanel(new GridLayout(3, 1, 0, 2));
