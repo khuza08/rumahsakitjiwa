@@ -47,6 +47,32 @@ public class DoctorCRUDPanel extends JPanel {
         }
     }
 
+    // Kelas untuk membatasi input hanya karakter yang valid untuk email
+    private static class EmailDocument extends PlainDocument {
+        @Override
+        public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
+            if (str == null) return;
+
+            // Ambil teks saat ini
+            String currentText = getText(0, getLength());
+            String newText = currentText.substring(0, offs) + str + currentText.substring(offs);
+
+            // Periksa apakah karakter yang dimasukkan valid untuk email (hanya karakter alfanumerik, ., _, +, -, @)
+            for (char c : str.toCharArray()) {
+                if (!isEmailCharacter(c)) {
+                    return; // Jangan masukkan karakter yang tidak valid untuk email
+                }
+            }
+
+            super.insertString(offs, str, a);
+        }
+
+        private boolean isEmailCharacter(char c) {
+            // Email hanya boleh berisi huruf, angka, dan karakter khusus: ., _, +, -, @
+            return Character.isLetterOrDigit(c) || c == '.' || c == '_' || c == '+' || c == '-' || c == '@';
+        }
+    }
+
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
         "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@" +
         "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
@@ -135,6 +161,7 @@ public class DoctorCRUDPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 5;
         formPanel.add(new JLabel("Email:"), gbc);
         txtEmail = new JTextField(15);
+        txtEmail.setDocument(new EmailDocument()); // Terapkan custom document untuk hanya karakter valid email
         gbc.gridx = 1;
         formPanel.add(txtEmail, gbc);
 

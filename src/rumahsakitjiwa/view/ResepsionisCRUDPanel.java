@@ -8,19 +8,41 @@ package rumahsakitjiwa.view;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.sql.*;
 import rumahsakitjiwa.database.DatabaseConnection;
 
 public class ResepsionisCRUDPanel extends JPanel {
+    // Kelas untuk membatasi input hanya angka
+    private static class NumericDocument extends PlainDocument {
+        private final int maxLength;
+
+        public NumericDocument(int maxLength) {
+            this.maxLength = maxLength;
+        }
+
+        @Override
+        public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
+            if (str == null) return;
+            String currentText = getText(0, getLength());
+            String newText = currentText.substring(0, offs) + str + currentText.substring(offs);
+            if (newText.matches("\\d+") && newText.length() <= maxLength) {
+                super.insertString(offs, str, a);
+            }
+        }
+    }
+
     private DefaultTableModel tableModel;
     private JTable resepsionisTable;
-    
+
     // Ganti JPasswordField menjadi JTextField agar teks terlihat
     private JTextField txtNIR, txtNama, txtAlamat, txtNoTlp, txtUsername, txtPassword;
     private JComboBox<String> cbGender;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
-    
+
     private int selectedId = -1;
     private Dashboard dashboard;
     private JTextField searchField;
@@ -96,6 +118,7 @@ public class ResepsionisCRUDPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 4;
         formPanel.add(new JLabel("No. Tlp:"), gbc);
         txtNoTlp = new JTextField(15);
+        txtNoTlp.setDocument(new NumericDocument(13)); // Terapkan custom document untuk hanya angka maksimal 13 digit
         gbc.gridx = 1;
         formPanel.add(txtNoTlp, gbc);
 
