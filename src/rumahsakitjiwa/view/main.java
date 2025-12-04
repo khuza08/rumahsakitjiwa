@@ -115,7 +115,7 @@ public class main extends JFrame {
                 "Akses terbatas. Hubungi administrator untuk manajemen dokter."), "DOKTER");
             contentPanel.add(createContentPanel("Data Kamar", 
                 "Akses terbatas. Hubungi administrator untuk manajemen kamar."), "KAMAR");
-            contentPanel.add(createContentPanel("Jadwal", 
+            contentPanel.add(createContentPanel("Jadwal Dokter",
                 "Akses terbatas. Hubungi administrator untuk manajemen jadwal."), "JADWAL");
             contentPanel.add(createContentPanel("Laporan", 
                 "Akses terbatas. Hubungi administrator untuk laporan."), "LAPORAN");
@@ -199,7 +199,7 @@ public class main extends JFrame {
         
         // Menu Items
             if ("admin".equals(userRole)) {
-                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal"};
+                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal Dokter"};
                 String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "RESEPSIONIS", "JADWAL"};
 
             for (int i = 0; i < menuItems.length; i++) {
