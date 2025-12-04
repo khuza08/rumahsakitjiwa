@@ -23,6 +23,7 @@ public class DoctorCRUDPanel extends JPanel {
     private JLabel totalDoctorLabel; // ✅ untuk update total dokter
     private int selectedDoctorId = -1;
     private Dashboard dashboard;
+    private JTextField searchField;
     
     // Filter dihapus karena tidak ada spesialisasi/status
     // private JComboBox<String> cbFilterSpecialization;
@@ -182,7 +183,23 @@ private JPanel createTablePanel() {
     JLabel tableTitle = new JLabel("Daftar Dokter");
     tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
     tableTitle.setForeground(new Color(0x6da395));
-    tablePanel.add(tableTitle, BorderLayout.NORTH);
+
+    // Tambahkan panel pencarian
+    JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    searchPanel.setOpaque(false);
+    searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+    searchPanel.add(new JLabel("Cari Dokter:"));
+    searchField = new JTextField(20);
+    searchField.setToolTipText("Cari berdasarkan ID Dokter, Nama, Alamat, Telepon, atau Email");
+    searchPanel.add(searchField);
+
+    // Tambahkan panel judul dan pencarian ke bagian NORTH
+    JPanel titleAndSearchPanel = new JPanel(new BorderLayout());
+    titleAndSearchPanel.setOpaque(false);
+    titleAndSearchPanel.add(tableTitle, BorderLayout.CENTER);
+    titleAndSearchPanel.add(searchPanel, BorderLayout.EAST);
+
+    tablePanel.add(titleAndSearchPanel, BorderLayout.NORTH);
 
     // ✅ Tambahkan label total dokter
     JLabel totalLabel = new JLabel("Total Dokter: 0", SwingConstants.RIGHT);
@@ -224,7 +241,7 @@ private JPanel createTablePanel() {
     JScrollPane scrollPane = new JScrollPane(doctorTable);
     scrollPane.setOpaque(false);
     scrollPane.getViewport().setOpaque(false);
-    
+
     tablePanel.add(scrollPane, BorderLayout.CENTER);
 
     // ✅ Simpan referensi ke totalLabel agar bisa diupdate
@@ -236,9 +253,32 @@ private JPanel createTablePanel() {
     // ❌ loadSpecializations() dan applyFilter() dihapus
 
     private void setupTable() {
+        // Buat dan tetapkan TableRowSorter
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter =
+            new javax.swing.table.TableRowSorter<>(tableModel);
+        doctorTable.setRowSorter(rowSorter);
+
         doctorTable.getColumnModel().getColumn(0).setMinWidth(0);
         doctorTable.getColumnModel().getColumn(0).setMaxWidth(0);
         doctorTable.getColumnModel().getColumn(0).setPreferredWidth(0);
+
+        // Tambahkan listener untuk live search
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+        });
     }
 
     private JButton createStyledButton(String text, Color color) {
@@ -429,19 +469,30 @@ private JPanel createTablePanel() {
     }
 
     private void loadSelectedDoctor() {
-        int selectedRow = doctorTable.getSelectedRow();
-        if (selectedRow >= 0) {
-            selectedDoctorId = (Integer) tableModel.getValueAt(selectedRow, 0);
-            txtDoctorCode.setText((String) tableModel.getValueAt(selectedRow, 1));
-            txtFullName.setText((String) tableModel.getValueAt(selectedRow, 2));
-            txtAddress.setText((String) tableModel.getValueAt(selectedRow, 3));
-            txtPhone.setText((String) tableModel.getValueAt(selectedRow, 4));
-            txtEmail.setText((String) tableModel.getValueAt(selectedRow, 5));
+        int selectedViewRow = doctorTable.getSelectedRow();
+        if (selectedViewRow >= 0) {
+            // Konversi dari indeks tampilan ke indeks model sebenarnya
+            int selectedModelRow = doctorTable.convertRowIndexToModel(selectedViewRow);
+
+            selectedDoctorId = (Integer) tableModel.getValueAt(selectedModelRow, 0);
+            txtDoctorCode.setText((String) tableModel.getValueAt(selectedModelRow, 1));
+            txtFullName.setText((String) tableModel.getValueAt(selectedModelRow, 2));
+            txtAddress.setText((String) tableModel.getValueAt(selectedModelRow, 3));
+            txtPhone.setText((String) tableModel.getValueAt(selectedModelRow, 4));
+            txtEmail.setText((String) tableModel.getValueAt(selectedModelRow, 5));
             // ❌ status tidak dimuat
         }
     }
 
     private void loadDoctorData() {
+        // Simpan status filter saat ini
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter
+            = (javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel>) doctorTable.getRowSorter();
+        javax.swing.RowFilter rowFilter = null;
+        if (rowSorter != null) {
+            rowFilter = rowSorter.getRowFilter();
+        }
+
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT * FROM doctors ORDER BY doctor_code";
@@ -470,6 +521,11 @@ private JPanel createTablePanel() {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal memuat data dokter: " + e.getMessage(),
                     "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        // Setelah memuat data baru, kembalikan filter jika ada
+        if (rowSorter != null) {
+            rowSorter.setRowFilter(rowFilter);
         }
     }
     
@@ -572,6 +628,24 @@ private JPanel createTablePanel() {
             JOptionPane.showMessageDialog(this, "Gagal generate kode dokter: " + e.getMessage(),
                     "Database Error", JOptionPane.ERROR_MESSAGE);
             return "DOK001";
+        }
+    }
+
+    private void filterTable(String searchText) {
+        // Konversi teks pencarian ke huruf kecil untuk pencarian case-insensitive
+        String lowerSearchText = searchText.toLowerCase().trim();
+
+        // Dapatkan TableRowSorter untuk tabel
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter
+            = (javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel>) doctorTable.getRowSorter();
+
+        if (lowerSearchText.isEmpty()) {
+            // Jika tidak ada teks pencarian, tampilkan semua data
+            rowSorter.setRowFilter(null);
+        } else {
+            // Buat filter untuk mencocokkan teks di semua kolom (kecuali kolom ID yang tersembunyi)
+            // Kolom ID diabaikan karena tidak ditampilkan ke pengguna
+            rowSorter.setRowFilter(javax.swing.RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(lowerSearchText), 1, 2, 3, 4, 5)); // Kolom 1-5 (ID Dokter ke Email)
         }
     }
 }
