@@ -22,6 +22,7 @@ public class ScheduleManagementPanel extends JPanel {
     private int selectedScheduleId = -1; // Tetap simpan ID internal untuk CRUD
     private Dashboard dashboard;
     private boolean isFirstLoad = true;
+    private JTextField searchField;
 
     private static final Map<String, String[]> SHIFT_TIMES = new HashMap<>();
     static {
@@ -132,8 +133,21 @@ public class ScheduleManagementPanel extends JPanel {
         buttonPanel.add(btnDeleteSchedule);
         buttonPanel.add(btnClearForm);
 
+        // Tambahkan panel pencarian di sebelah kanan tombol
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        searchPanel.add(new JLabel("Cari Jadwal:"));
+        searchField = new JTextField(20);
+        searchField.setToolTipText("Cari berdasarkan kode dokter, nama dokter, hari, atau shift");
+        searchPanel.add(searchField);
+
+        // Gabungkan panel tombol dan pencarian dalam satu panel horizontal
+        JPanel buttonAndSearchPanel = new JPanel(new BorderLayout());
+        buttonAndSearchPanel.add(buttonPanel, BorderLayout.CENTER);
+        buttonAndSearchPanel.add(searchPanel, BorderLayout.EAST);
+
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
-        formPanel.add(buttonPanel, gbc);
+        formPanel.add(buttonAndSearchPanel, gbc);
 
         // ✅ GANTI KOLOM JADI "Kode Dokter"
         String[] columns = {"Kode Dokter", "Dokter", "Hari", "Shift"};
@@ -146,6 +160,12 @@ public class ScheduleManagementPanel extends JPanel {
 
         scheduleTable = new JTable(tableModel);
         scheduleTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        // Buat TableRowSorter dan tetapkan ke tabel
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter =
+            new javax.swing.table.TableRowSorter<>(tableModel);
+        scheduleTable.setRowSorter(rowSorter);
+
         scheduleTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && scheduleTable.getSelectedRow() != -1 && !isFirstLoad) {
                 loadSelectedSchedule();
@@ -155,6 +175,24 @@ public class ScheduleManagementPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(scheduleTable);
         add(formPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
+
+        // Tambahkan listener untuk live search
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterTable(searchField.getText());
+            }
+        });
 
         resetFormToDefault();
     }
@@ -202,6 +240,15 @@ public class ScheduleManagementPanel extends JPanel {
 
     private void loadSchedules() {
         isFirstLoad = true;
+
+        // Simpan status filter saat ini
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> sorter =
+            (javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel>) scheduleTable.getRowSorter();
+        javax.swing.RowFilter rowFilter = null;
+        if (sorter != null) {
+            rowFilter = sorter.getRowFilter();
+        }
+
         tableModel.setRowCount(0);
         try (Connection conn = DatabaseConnection.getConnection()) {
             // ✅ Ambil doctor_code dari tabel doctors
@@ -226,6 +273,11 @@ public class ScheduleManagementPanel extends JPanel {
                     "Database Error", JOptionPane.ERROR_MESSAGE);
         }
 
+        // Setelah memuat data baru, kembalikan filter jika ada
+        if (sorter != null) {
+            sorter.setRowFilter(rowFilter);
+        }
+
         resetFormToDefault();
         selectedScheduleId = -1;
         scheduleTable.clearSelection();
@@ -233,17 +285,20 @@ public class ScheduleManagementPanel extends JPanel {
     }
 
     private void loadSelectedSchedule() {
-        int selectedRow = scheduleTable.getSelectedRow();
-        if (selectedRow < 0) return;
+        int selectedViewRow = scheduleTable.getSelectedRow();
+        if (selectedViewRow < 0) return;
+
+        // Konversi dari indeks tampilan ke indeks model sebenarnya
+        int selectedModelRow = scheduleTable.convertRowIndexToModel(selectedViewRow);
 
         // ✅ Ambil schedule.id berdasarkan doctor_code + hari + shift
         try (Connection conn = DatabaseConnection.getConnection()) {
             String sql = "SELECT s.id FROM schedules s " +
                          "WHERE s.doctor_code = ? AND s.days = ? AND s.shift = ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, (String) tableModel.getValueAt(selectedRow, 0)); // Kode Dokter
-            pstmt.setString(2, (String) tableModel.getValueAt(selectedRow, 2)); // Hari
-            pstmt.setString(3, (String) tableModel.getValueAt(selectedRow, 3)); // Shift
+            pstmt.setString(1, (String) tableModel.getValueAt(selectedModelRow, 0)); // Kode Dokter
+            pstmt.setString(2, (String) tableModel.getValueAt(selectedModelRow, 2)); // Hari
+            pstmt.setString(3, (String) tableModel.getValueAt(selectedModelRow, 3)); // Shift
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 selectedScheduleId = rs.getInt("id");
@@ -258,11 +313,11 @@ public class ScheduleManagementPanel extends JPanel {
         }
 
         // Load dokter
-        String doctorCode = (String) tableModel.getValueAt(selectedRow, 0);
+        String doctorCode = (String) tableModel.getValueAt(selectedModelRow, 0);
         cbDoctors.setSelectedItem(doctorCode);
 
         // Load days
-        String daysStr = (String) tableModel.getValueAt(selectedRow, 2);
+        String daysStr = (String) tableModel.getValueAt(selectedModelRow, 2);
         Set<String> selectedDays = new HashSet<>();
         if (daysStr != null && !daysStr.trim().isEmpty()) {
             selectedDays.addAll(Arrays.asList(daysStr.split(",")));
@@ -272,7 +327,7 @@ public class ScheduleManagementPanel extends JPanel {
         }
 
         // Load shift
-        String shift = (String) tableModel.getValueAt(selectedRow, 3);
+        String shift = (String) tableModel.getValueAt(selectedModelRow, 3);
         cbShift.setSelectedItem(shift);
     }
 
@@ -452,6 +507,29 @@ public class ScheduleManagementPanel extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return false;
+        }
+    }
+
+    private void filterTable(String searchText) {
+        // Konversi teks pencarian ke huruf kecil untuk pencarian case-insensitive
+        String lowerSearchText = searchText.toLowerCase().trim();
+
+        // Pastikan sorter sudah diinisialisasi
+        javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel> rowSorter
+            = (javax.swing.table.TableRowSorter<javax.swing.table.DefaultTableModel>) scheduleTable.getRowSorter();
+
+        if (rowSorter == null) {
+            // Jika sorter belum diinisialisasi, buat baru dan tetapkan ke tabel
+            rowSorter = new javax.swing.table.TableRowSorter<>(tableModel);
+            scheduleTable.setRowSorter(rowSorter);
+        }
+
+        if (lowerSearchText.isEmpty()) {
+            // Jika tidak ada teks pencarian, tampilkan semua data
+            rowSorter.setRowFilter(null);
+        } else {
+            // Buat filter untuk mencocokkan teks di semua kolom
+            rowSorter.setRowFilter(javax.swing.RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(lowerSearchText)));
         }
     }
 }
