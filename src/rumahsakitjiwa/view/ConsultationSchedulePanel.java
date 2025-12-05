@@ -5,31 +5,33 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.sql.*;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.ConsultationSchedule;
-import rumahsakitjiwa.model.Doctor;
-import rumahsakitjiwa.model.Pasien;
-import rumahsakitjiwa.model.Schedule;
+import rumahsakitjiwa.controller.ConsultationScheduleController;
+import rumahsakitjiwa.dao.ConsultationScheduleDataAccess;
+import rumahsakitjiwa.utils.ConsultationScheduleHelper;
 
 public class ConsultationSchedulePanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable consultationTable;
-    private JTextField txtScheduleId, txtConsultationDate, txtStartTime, txtEndTime, txtNotes, txtRoom;
-    private JComboBox<String> cbStatus, cbPatient, cbDoctor;
+    private JTextField txtScheduleId, txtConsultationDate, txtStartTime, txtEndTime, txtRoom, txtRecommendedRoomType, txtRecommendedDuration, txtAdmissionNotes;
+    private JComboBox<String> cbStatus, cbPatient, cbDoctor, cbInpatientRequired;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear, btnCheckAvailability;
+    private JPanel inpatientDetailsPanel;
     private int selectedScheduleId = -1;
     private Dashboard dashboard;
     private String userRole;
+    
+    // Menambahkan controller dan DAO sebagai properti kelas
+    private ConsultationScheduleController controller;
+    private ConsultationScheduleDataAccess dataAccess;
 
     public ConsultationSchedulePanel() {
+        this.controller = new ConsultationScheduleController();
+        this.dataAccess = new ConsultationScheduleDataAccess();
         initComponents();
         setupTable();
         loadSchedules();
@@ -107,7 +109,6 @@ public class ConsultationSchedulePanel extends JPanel {
         txtConsultationDate.setEditable(isResepsionis);
         txtStartTime.setEditable(isResepsionis);
         txtEndTime.setEditable(isResepsionis);
-        txtNotes.setEditable(isResepsionis);
         txtRoom.setEditable(isResepsionis);
         cbStatus.setEnabled(isResepsionis && "admin".equalsIgnoreCase(userRole)); // Only admin can change status
 
@@ -227,12 +228,58 @@ public class ConsultationSchedulePanel extends JPanel {
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(cbStatus, gbc);
 
-        // Notes
+        // Inpatient Required
         gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 1;
-        formPanel.add(new JLabel("Catatan:"), gbc);
-        txtNotes = new JTextField(15);
+        formPanel.add(new JLabel("Perlu Rawat Inap:"), gbc);
+        cbInpatientRequired = new JComboBox<>(new String[]{"Tidak", "Ya"});
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(txtNotes, gbc);
+        formPanel.add(cbInpatientRequired, gbc);
+
+        // Panel terpisah untuk detail rawat inap (akan disembunyikan secara default)
+        inpatientDetailsPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbcDetail = new GridBagConstraints();
+        gbcDetail.insets = new Insets(2, 5, 2, 5);
+        gbcDetail.anchor = GridBagConstraints.WEST;
+
+        inpatientDetailsPanel.setBorder(BorderFactory.createTitledBorder("Detail Rawat Inap"));
+        inpatientDetailsPanel.setVisible(false); // Default disembunyikan
+
+        gbcDetail.gridx = 0; gbcDetail.gridy = 0;
+        inpatientDetailsPanel.add(new JLabel("Tipe Kamar Rekomendasi:"), gbcDetail);
+        txtRecommendedRoomType = new JTextField(10);
+        gbcDetail.gridx = 1;
+        inpatientDetailsPanel.add(txtRecommendedRoomType, gbcDetail);
+
+        gbcDetail.gridx = 0; gbcDetail.gridy = 1;
+        inpatientDetailsPanel.add(new JLabel("Durasi Perkiraan (hari):"), gbcDetail);
+        txtRecommendedDuration = new JTextField(10);
+        gbcDetail.gridx = 1;
+        inpatientDetailsPanel.add(txtRecommendedDuration, gbcDetail);
+
+        gbcDetail.gridx = 0; gbcDetail.gridy = 2; gbcDetail.gridwidth = 2;
+        inpatientDetailsPanel.add(new JLabel("Catatan Rawat Inap:"), gbcDetail);
+        gbcDetail.gridy = 3;
+        gbcDetail.fill = GridBagConstraints.HORIZONTAL;
+        gbcDetail.weightx = 1.0;
+        gbcDetail.ipady = 20; // Tinggi tetap untuk text area
+        txtAdmissionNotes = new JTextField(10);
+        inpatientDetailsPanel.add(txtAdmissionNotes, gbcDetail);
+
+        // Atur ukuran maksimum panel untuk mencegah tampilan tidak seimbang
+        inpatientDetailsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+
+        gbc.gridx = 0; gbc.gridy = 11; gbc.gridwidth = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 10, 10, 10);
+        formPanel.add(inpatientDetailsPanel, gbc);
+
+        // Listener untuk menampilkan/menyembunyikan panel detail rawat inap
+        cbInpatientRequired.addActionListener(e -> {
+            String selected = (String) cbInpatientRequired.getSelectedItem();
+            inpatientDetailsPanel.setVisible("Ya".equals(selected));
+            formPanel.revalidate();
+            formPanel.repaint();
+        });
 
         // Buttons
         JPanel buttonPanel = new JPanel(new GridLayout(3, 2, 5, 5));
@@ -241,6 +288,11 @@ public class ConsultationSchedulePanel extends JPanel {
         btnCheckAvailability = createStyledButton("Cek Jadwal", new Color(0x9C27B0));
         btnAdd = createStyledButton("Jadwalkan", new Color(0x4CAF50));
         btnUpdate = createStyledButton("Update", new Color(0x2196F3));
+
+        // Tombol booking kamar, ditempatkan sejajar dengan tombol update
+        JButton btnCreateBooking = createStyledButton("Booking", new Color(0xFF9800)); // Warna oranye agar terlihat berbeda
+        btnCreateBooking.addActionListener(e -> createBookingFromConsultation());
+
         btnDelete = createStyledButton("Hapus", new Color(0xF44336));
         btnClear = createStyledButton("Clear", new Color(0x9E9E9E));
 
@@ -253,10 +305,11 @@ public class ConsultationSchedulePanel extends JPanel {
         buttonPanel.add(btnCheckAvailability);
         buttonPanel.add(btnAdd);
         buttonPanel.add(btnUpdate);
+        buttonPanel.add(btnCreateBooking); // Menempatkan tombol booking di sebelah update
         buttonPanel.add(btnDelete);
         buttonPanel.add(btnClear);
 
-        gbc.gridx = 0; gbc.gridy = 11; gbc.gridwidth = 3;
+        gbc.gridx = 0; gbc.gridy = 12; gbc.gridwidth = 3; // Mengganti indeks baris karena panel inap sekarang di indeks 11
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
 
@@ -282,7 +335,7 @@ public class ConsultationSchedulePanel extends JPanel {
         tableTitle.setForeground(new Color(0x6da395));
         tablePanel.add(tableTitle, BorderLayout.NORTH);
 
-        String[] columns = {"ID", "Kode Pasien", "Nama Pasien", "Kode Dokter", "Nama Dokter", "Tanggal", "Waktu", "Status", "Ruangan"};
+        String[] columns = {"ID", "Kode Pasien", "Nama Pasien", "Kode Dokter", "Nama Dokter", "Tanggal", "Waktu", "Status", "Ruangan", "Rawat Inap?", "Tipe Kamar Rekom.", "Durasi Rekom.", "Catatan Rawat"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -404,7 +457,7 @@ public class ConsultationSchedulePanel extends JPanel {
             String dayOfWeek = consultationLocalDate.getDayOfWeek().name();
 
             // Konversi ke nama hari Indonesia
-            String indoDay = getIndonesianDay(dayOfWeek);
+            String indoDay = ConsultationScheduleHelper.getIndonesianDay(dayOfWeek);
 
             // Cek apakah dokter memiliki jadwal di hari tersebut
             String sql = "SELECT s.shift FROM schedules s JOIN doctors d ON s.doctor_code = d.doctor_code WHERE d.doctor_code = ? AND FIND_IN_SET(?, s.days) > 0";
@@ -425,23 +478,10 @@ public class ConsultationSchedulePanel extends JPanel {
         }
     }
 
-    private String getIndonesianDay(String englishDay) {
-        switch (englishDay) {
-            case "MONDAY": return "Senin";
-            case "TUESDAY": return "Selasa";
-            case "WEDNESDAY": return "Rabu";
-            case "THURSDAY": return "Kamis";
-            case "FRIDAY": return "Jumat";
-            case "SATURDAY": return "Sabtu";
-            case "SUNDAY": return "Minggu";
-            default: return englishDay;
-        }
-    }
-
     private void addSchedule() {
         if (!"resepsionis".equalsIgnoreCase(userRole)) return;
 
-        if (!validateInput()) return;
+        if (!controller.validateInput(txtConsultationDate, txtStartTime, txtEndTime, cbPatient, cbDoctor)) return;
 
         try {
             // Ekstrak kode dan nama pasien dari combobox
@@ -469,7 +509,7 @@ public class ConsultationSchedulePanel extends JPanel {
             }
 
             // Validasi ketersediaan dokter untuk waktu yang dipilih
-            if (!isDoctorAvailableForTime(doctorCode,
+            if (!controller.isDoctorAvailableForTime(doctorCode,
                                          LocalDate.parse(txtConsultationDate.getText().trim()),
                                          LocalTime.parse(txtStartTime.getText().trim()),
                                          LocalTime.parse(txtEndTime.getText().trim()))) {
@@ -478,7 +518,7 @@ public class ConsultationSchedulePanel extends JPanel {
             }
 
             // Periksa apakah ada konflik jadwal untuk pasien
-            if (isPatientBusyAtTime(patientCode,
+            if (controller.isPatientBusyAtTime(patientCode,
                                    LocalDate.parse(txtConsultationDate.getText().trim()),
                                    LocalTime.parse(txtStartTime.getText().trim()),
                                    LocalTime.parse(txtEndTime.getText().trim()))) {
@@ -496,10 +536,15 @@ public class ConsultationSchedulePanel extends JPanel {
             schedule.setStartTime(txtStartTime.getText().trim());
             schedule.setEndTime(txtEndTime.getText().trim());
             schedule.setStatus((String) cbStatus.getSelectedItem());
-            schedule.setNotes(txtNotes.getText().trim());
             schedule.setRoom(txtRoom.getText().trim());
 
-            if (insertSchedule(schedule)) {
+            // Tambahkan data kebutuhan rawat inap
+            schedule.setInpatientRequired("Ya".equals(cbInpatientRequired.getSelectedItem()));
+            schedule.setRecommendedRoomType(txtRecommendedRoomType.getText().trim());
+            schedule.setRecommendedDuration(txtRecommendedDuration.getText().trim());
+            schedule.setAdmissionNotes(txtAdmissionNotes.getText().trim());
+
+            if (dataAccess.insertSchedule(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal konsultasi berhasil ditambahkan!");
                 loadSchedules();
                 clearForm();
@@ -520,7 +565,7 @@ public class ConsultationSchedulePanel extends JPanel {
             return;
         }
 
-        if (!validateInput()) return;
+        if (!controller.validateInput(txtConsultationDate, txtStartTime, txtEndTime, cbPatient, cbDoctor)) return;
 
         try {
             // Ekstrak kode dan nama pasien dari combobox
@@ -548,7 +593,7 @@ public class ConsultationSchedulePanel extends JPanel {
             }
 
             // Validasi ketersediaan dokter untuk waktu yang dipilih
-            if (!isDoctorAvailableForTime(doctorCode,
+            if (!controller.isDoctorAvailableForTime(doctorCode,
                                          LocalDate.parse(txtConsultationDate.getText().trim()),
                                          LocalTime.parse(txtStartTime.getText().trim()),
                                          LocalTime.parse(txtEndTime.getText().trim()))) {
@@ -557,7 +602,7 @@ public class ConsultationSchedulePanel extends JPanel {
             }
 
             // Periksa apakah ada konflik jadwal untuk pasien (kecuali jadwal yang sedang diupdate)
-            if (isPatientBusyAtTime(patientCode,
+            if (controller.isPatientBusyAtTime(patientCode,
                                    LocalDate.parse(txtConsultationDate.getText().trim()),
                                    LocalTime.parse(txtStartTime.getText().trim()),
                                    LocalTime.parse(txtEndTime.getText().trim()),
@@ -577,10 +622,15 @@ public class ConsultationSchedulePanel extends JPanel {
             schedule.setStartTime(txtStartTime.getText().trim());
             schedule.setEndTime(txtEndTime.getText().trim());
             schedule.setStatus((String) cbStatus.getSelectedItem());
-            schedule.setNotes(txtNotes.getText().trim());
             schedule.setRoom(txtRoom.getText().trim());
 
-            if (updateScheduleInDB(schedule)) {
+            // Tambahkan data kebutuhan rawat inap
+            schedule.setInpatientRequired("Ya".equals(cbInpatientRequired.getSelectedItem()));
+            schedule.setRecommendedRoomType(txtRecommendedRoomType.getText().trim());
+            schedule.setRecommendedDuration(txtRecommendedDuration.getText().trim());
+            schedule.setAdmissionNotes(txtAdmissionNotes.getText().trim());
+
+            if (dataAccess.updateScheduleInDB(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal konsultasi berhasil diupdate!");
                 loadSchedules();
                 clearForm();
@@ -605,7 +655,7 @@ public class ConsultationSchedulePanel extends JPanel {
                 "Apakah Anda yakin ingin menghapus jadwal konsultasi ini?",
                 "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            if (deleteScheduleFromDB(selectedScheduleId)) {
+            if (dataAccess.deleteScheduleFromDB(selectedScheduleId)) {
                 JOptionPane.showMessageDialog(this, "Jadwal konsultasi berhasil dihapus!");
                 loadSchedules();
                 clearForm();
@@ -625,147 +675,17 @@ public class ConsultationSchedulePanel extends JPanel {
         txtEndTime.setText("");
         txtRoom.setText("");
         cbStatus.setSelectedItem("Scheduled");
-        txtNotes.setText("");
+        cbInpatientRequired.setSelectedItem("Tidak");
+        txtRecommendedRoomType.setText("");
+        txtRecommendedDuration.setText("");
+        txtAdmissionNotes.setText("");
         selectedScheduleId = -1;
         consultationTable.clearSelection();
-    }
 
-    private boolean validateInput() {
-        if (cbPatient.getSelectedItem() == null || cbPatient.getSelectedItem().toString().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pasien harus dipilih!");
-            cbPatient.requestFocus();
-            return false;
+        // Sembunyikan panel detail rawat inap saat form dibersihkan
+        if (inpatientDetailsPanel != null) {
+            inpatientDetailsPanel.setVisible(false);
         }
-
-        if (cbDoctor.getSelectedItem() == null || cbDoctor.getSelectedItem().toString().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Dokter harus dipilih!");
-            cbDoctor.requestFocus();
-            return false;
-        }
-
-        try {
-            LocalDate consultationDate = LocalDate.parse(txtConsultationDate.getText().trim());
-            if (consultationDate.isBefore(LocalDate.now())) {
-                JOptionPane.showMessageDialog(this, "Tanggal konsultasi tidak valid (harus hari ini atau di masa depan)!");
-                return false;
-            }
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Format tanggal tidak valid! Gunakan format YYYY-MM-DD");
-            return false;
-        }
-
-        try {
-            LocalTime startTime = LocalTime.parse(txtStartTime.getText().trim());
-            LocalTime endTime = LocalTime.parse(txtEndTime.getText().trim());
-            if (startTime.isAfter(endTime)) {
-                JOptionPane.showMessageDialog(this, "Waktu mulai harus sebelum waktu selesai!");
-                return false;
-            }
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Format waktu tidak valid! Gunakan format HH:MM");
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean isDoctorAvailableForTime(String doctorCode, LocalDate date, LocalTime startTime, LocalTime endTime) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            // Cek apakah dokter memiliki jadwal kerja di hari tersebut
-            String dayOfWeek = getIndonesianDay(date.getDayOfWeek().name());
-            
-            String sql = "SELECT s.shift, st.start_time, st.end_time FROM schedules s " +
-                        "JOIN doctors d ON s.doctor_code = d.doctor_code " +
-                        "JOIN shift_times st ON s.shift = st.shift_name " +
-                        "WHERE d.doctor_code = ? AND FIND_IN_SET(?, s.days) > 0";
-            
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, doctorCode);
-            pstmt.setString(2, dayOfWeek);
-            ResultSet rs = pstmt.executeQuery();
-
-            if (!rs.next()) {
-                return false; // Dokter tidak kerja di hari tersebut
-            }
-
-            // Cek apakah waktu yang diminta berada dalam waktu shift dokter
-            LocalTime docStartTime = rs.getTime("start_time").toLocalTime();
-            LocalTime docEndTime = rs.getTime("end_time").toLocalTime();
-
-            if (startTime.isBefore(docStartTime) || endTime.isAfter(docEndTime)) {
-                return false; // Waktu konsultasi di luar waktu shift dokter
-            }
-
-            // Cek apakah ada jadwal konsultasi lain di waktu yang sama
-            String checkConflictSql = "SELECT COUNT(*) FROM consultation_schedules " +
-                                    "WHERE doctor_code = ? AND consultation_date = ? " +
-                                    "AND status != 'Cancelled' AND status != 'Completed' " +
-                                    "AND ((start_time < ? AND end_time > ?) OR (start_time < ? AND end_time > ?))";
-            
-            PreparedStatement checkPstmt = conn.prepareStatement(checkConflictSql);
-            checkPstmt.setString(1, doctorCode);
-            checkPstmt.setDate(2, java.sql.Date.valueOf(date));
-            checkPstmt.setTime(3, java.sql.Time.valueOf(endTime));
-            checkPstmt.setTime(4, java.sql.Time.valueOf(startTime));
-            checkPstmt.setTime(5, java.sql.Time.valueOf(endTime));
-            checkPstmt.setTime(6, java.sql.Time.valueOf(startTime));
-            
-            ResultSet conflictRs = checkPstmt.executeQuery();
-            if (conflictRs.next() && conflictRs.getInt(1) > 0) {
-                return false; // Ada konflik jadwal
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-    private boolean isPatientBusyAtTime(String patientCode, LocalDate date, LocalTime startTime, LocalTime endTime) {
-        return isPatientBusyAtTime(patientCode, date, startTime, endTime, -1);
-    }
-
-    private boolean isPatientBusyAtTime(String patientCode, LocalDate date, LocalTime startTime, LocalTime endTime, int excludeScheduleId) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql;
-            PreparedStatement pstmt;
-            
-            if (excludeScheduleId != -1) {
-                sql = "SELECT COUNT(*) FROM consultation_schedules " +
-                      "WHERE patient_code = ? AND consultation_date = ? AND id != ? " +
-                      "AND status != 'Cancelled' AND status != 'Completed' " +
-                      "AND ((start_time < ? AND end_time > ?) OR (start_time < ? AND end_time > ?))";
-                
-                pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, patientCode);
-                pstmt.setDate(2, java.sql.Date.valueOf(date));
-                pstmt.setInt(3, excludeScheduleId);
-            } else {
-                sql = "SELECT COUNT(*) FROM consultation_schedules " +
-                      "WHERE patient_code = ? AND consultation_date = ? " +
-                      "AND status != 'Cancelled' AND status != 'Completed' " +
-                      "AND ((start_time < ? AND end_time > ?) OR (start_time < ? AND end_time > ?))";
-                
-                pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, patientCode);
-                pstmt.setDate(2, java.sql.Date.valueOf(date));
-            }
-            
-            pstmt.setTime(3, java.sql.Time.valueOf(endTime));
-            pstmt.setTime(4, java.sql.Time.valueOf(startTime));
-            pstmt.setTime(5, java.sql.Time.valueOf(endTime));
-            pstmt.setTime(6, java.sql.Time.valueOf(startTime));
-            
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0; // Ada konflik jadwal
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return true; // Asumsikan sibuk jika terjadi error
-        }
-        return false;
     }
 
     private void loadSelectedSchedule() {
@@ -796,98 +716,188 @@ public class ConsultationSchedulePanel extends JPanel {
             }
             cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 7));
             txtRoom.setText((String) tableModel.getValueAt(selectedRow, 8));
+
+            // Load data tambahan untuk kebutuhan rawat inap
+            Object inpatientRequiredObj = tableModel.getValueAt(selectedRow, 9); // kolom ke-9 adalah inpatient_required
+            boolean inpatientRequired = inpatientRequiredObj != null && Boolean.TRUE.equals(inpatientRequiredObj);
+            cbInpatientRequired.setSelectedItem(inpatientRequired ? "Ya" : "Tidak");
+
+            txtRecommendedRoomType.setText((String) tableModel.getValueAt(selectedRow, 10)); // recommended_room_type
+            txtRecommendedDuration.setText((String) tableModel.getValueAt(selectedRow, 11)); // recommended_duration
+            txtAdmissionNotes.setText((String) tableModel.getValueAt(selectedRow, 12)); // admission_notes
+
+            // Tampilkan panel detail jika diperlukan rawat inap
+            inpatientDetailsPanel.setVisible("Ya".equals(cbInpatientRequired.getSelectedItem()));
         }
     }
 
     private void loadSchedules() {
-        tableModel.setRowCount(0);
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT * FROM consultation_schedules ORDER BY consultation_date DESC, start_time";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                Object[] row = {
-                    rs.getInt("id"),
-                    rs.getString("patient_code"),
-                    rs.getString("patient_name"),
-                    rs.getString("doctor_code"),
-                    rs.getString("doctor_name"),
-                    rs.getDate("consultation_date"),
-                    rs.getString("start_time") + " - " + rs.getString("end_time"),
-                    rs.getString("status"),
-                    rs.getString("room")
-                };
-                tableModel.addRow(row);
+        dataAccess.loadSchedules(tableModel);
+    }
+
+    // Method untuk membuat booking kamar dari hasil konsultasi
+    private void createBookingFromConsultation() {
+        if (selectedScheduleId == -1) {
+            JOptionPane.showMessageDialog(this, "Silakan pilih konsultasi terlebih dahulu!");
+            return;
+        }
+
+        // Cek apakah pasien perlu rawat inap
+        String inpatientRequired = (String) cbInpatientRequired.getSelectedItem();
+        if (!"Ya".equals(inpatientRequired)) {
+            JOptionPane.showMessageDialog(this, "Pasien tidak membutuhkan rawat inap sesuai dengan hasil konsultasi ini!");
+            return;
+        }
+
+        // Tampilkan dialog untuk membuat booking kamar
+        // Di sini kita bisa membuka panel booking atau menampilkan form langsung
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Pasien membutuhkan rawat inap. Apakah Anda ingin membuat booking kamar sekarang?",
+                "Konfirmasi Booking Kamar", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            // Ambil informasi yang diperlukan
+            String patientCode = "";
+            String patientName = "";
+            String selectedPatient = (String) cbPatient.getSelectedItem();
+            if (selectedPatient != null && !selectedPatient.isEmpty()) {
+                String[] parts = selectedPatient.split(" - ", 2);
+                if (parts.length >= 2) {
+                    patientCode = parts[0].trim();
+                    patientName = parts[1].trim();
+                }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal memuat data jadwal: " + e.getMessage(),
-                    "Database Error", JOptionPane.ERROR_MESSAGE);
+
+            String doctorCode = "";
+            String doctorName = "";
+            String selectedDoctor = (String) cbDoctor.getSelectedItem();
+            if (selectedDoctor != null && !selectedDoctor.isEmpty()) {
+                String[] parts = selectedDoctor.split(" - ", 2);
+                if (parts.length >= 2) {
+                    doctorCode = parts[0].trim();
+                    doctorName = parts[1].trim();
+                }
+            }
+
+            String recommendedRoomType = txtRecommendedRoomType.getText().trim();
+            String admissionNotes = txtAdmissionNotes.getText().trim();
+            String consultationDateStr = txtConsultationDate.getText().trim();
+
+            // Buka form booking kamar dengan informasi dari konsultasi
+            openBookingForm(patientCode, patientName, doctorCode, doctorName, recommendedRoomType, consultationDateStr, admissionNotes);
         }
     }
 
-    private boolean insertSchedule(ConsultationSchedule schedule) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "INSERT INTO consultation_schedules (patient_code, patient_name, doctor_code, doctor_name, consultation_date, start_time, end_time, status, notes, room, scheduled_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, schedule.getPatientCode());
-            pstmt.setString(2, schedule.getPatientName());
-            pstmt.setString(3, schedule.getDoctorCode());
-            pstmt.setString(4, schedule.getDoctorName());
-            pstmt.setDate(5, new java.sql.Date(schedule.getConsultationDate().getTime()));
-            pstmt.setString(6, schedule.getStartTime());
-            pstmt.setString(7, schedule.getEndTime());
-            pstmt.setString(8, schedule.getStatus());
-            pstmt.setString(9, schedule.getNotes());
-            pstmt.setString(10, schedule.getRoom());
-            pstmt.setTimestamp(11, new java.sql.Timestamp(System.currentTimeMillis()));
+    private void openBookingForm(String patientCode, String patientName, String doctorCode, String doctorName,
+                                String recommendedRoomType, String consultationDate, String admissionNotes) {
+        // Membuat dialog untuk form booking berdasarkan hasil konsultasi
+        JDialog bookingDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Booking Kamar dari Konsultasi", true);
+        bookingDialog.setLayout(new BorderLayout());
 
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-    }
+        // Membuat form booking kamar
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
 
-    private boolean updateScheduleInDB(ConsultationSchedule schedule) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "UPDATE consultation_schedules SET patient_code=?, patient_name=?, doctor_code=?, doctor_name=?, consultation_date=?, start_time=?, end_time=?, status=?, notes=?, room=? WHERE id=?";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, schedule.getPatientCode());
-            pstmt.setString(2, schedule.getPatientName());
-            pstmt.setString(3, schedule.getDoctorCode());
-            pstmt.setString(4, schedule.getDoctorName());
-            pstmt.setDate(5, new java.sql.Date(schedule.getConsultationDate().getTime()));
-            pstmt.setString(6, schedule.getStartTime());
-            pstmt.setString(7, schedule.getEndTime());
-            pstmt.setString(8, schedule.getStatus());
-            pstmt.setString(9, schedule.getNotes());
-            pstmt.setString(10, schedule.getRoom());
-            pstmt.setInt(11, schedule.getId());
+        formPanel.add(new JLabel("Kode Pasien:"), gbc);
+        JTextField txtPatientCode = new JTextField(15);
+        txtPatientCode.setText(patientCode);
+        txtPatientCode.setEditable(false);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(txtPatientCode, gbc);
 
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-    }
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Nama Pasien:"), gbc);
+        JTextField txtPatientName = new JTextField(15);
+        txtPatientName.setText(patientName);
+        txtPatientName.setEditable(false);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(txtPatientName, gbc);
 
-    private boolean deleteScheduleFromDB(int scheduleId) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "DELETE FROM consultation_schedules WHERE id=?";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, scheduleId);
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Tipe Kamar Rekomendasi:"), gbc);
+        JTextField txtRoomType = new JTextField(15);
+        txtRoomType.setText(recommendedRoomType);
+        txtRoomType.setEditable(false);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(txtRoomType, gbc);
 
-            int result = pstmt.executeUpdate();
-            return result > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Tanggal Check-in:"), gbc);
+        JTextField txtCheckInDate = new JTextField(15);
+        txtCheckInDate.setText(consultationDate); // Gunakan tanggal konsultasi sebagai default
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(txtCheckInDate, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Tanggal Check-out:"), gbc);
+        JTextField txtCheckOutDate = new JTextField(15);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(txtCheckOutDate, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Catatan:"), gbc);
+        JTextField txtNotes = new JTextField(15);
+        txtNotes.setText(admissionNotes);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(txtNotes, gbc);
+
+        // Tombol OK dan Batal
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton btnOK = new JButton("OK");
+        JButton btnCancel = new JButton("Batal");
+
+        btnOK.addActionListener(e -> {
+            String checkInDate = txtCheckInDate.getText().trim();
+            String checkOutDate = txtCheckOutDate.getText().trim();
+
+            if (checkInDate.isEmpty()) {
+                JOptionPane.showMessageDialog(bookingDialog, "Tanggal check-in harus diisi!");
+                txtCheckInDate.requestFocus();
+                return;
+            }
+
+            // Validasi format tanggal
+            try {
+                java.time.LocalDate.parse(checkInDate);
+                if (!checkOutDate.isEmpty()) {
+                    java.time.LocalDate.parse(checkOutDate);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(bookingDialog, "Format tanggal tidak valid! Gunakan format YYYY-MM-DD");
+                return;
+            }
+
+            // Buka RoomBookingPanel dengan data yang sudah diisi
+            SwingUtilities.invokeLater(() -> {
+                // Di sini seharusnya kita buka RoomBookingPanel dan isi dengan data dari konsultasi
+                // Kita bisa mengirim data ini lewat parameter atau method setter
+                // Karena tidak bisa langsung mengakses RoomBookingPanel dari sini, kita tampilkan pesan untuk resepsionis
+                JOptionPane.showMessageDialog(bookingDialog,
+                    "Silakan buka panel Booking Kamar dan masukkan data pasien:\n" +
+                    "- Kode Pasien: " + patientCode + "\n" +
+                    "- Nama Pasien: " + patientName + "\n" +
+                    "- Tipe Kamar Rekomendasi: " + recommendedRoomType + "\n" +
+                    "- Tanggal Check-in: " + checkInDate + "\n" +
+                    "- Catatan: " + admissionNotes);
+            });
+
+            bookingDialog.dispose();
+        });
+
+        btnCancel.addActionListener(e -> bookingDialog.dispose());
+
+        buttonPanel.add(btnOK);
+        buttonPanel.add(btnCancel);
+
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        bookingDialog.add(formPanel, BorderLayout.CENTER);
+        bookingDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        bookingDialog.setSize(400, 300);
+        bookingDialog.setLocationRelativeTo(this);
+        bookingDialog.setVisible(true);
     }
 }

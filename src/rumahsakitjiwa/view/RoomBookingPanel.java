@@ -122,8 +122,15 @@ public class RoomBookingPanel extends JPanel {
         loadPatientsToComboBox();
         cbPatient.setSelectedIndex(-1); // Tidak ada pilihan yang dipilih secara default
 
-        // Room Selection
+        // Room Type
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Tipe Kamar:"), gbc);
+        cbRoomType = new JComboBox<>();
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(cbRoomType, gbc);
+
+        // Room Selection
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Pilih Kamar:"), gbc);
         cbRoom = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
@@ -132,13 +139,6 @@ public class RoomBookingPanel extends JPanel {
         // Load available rooms into the combobox
         loadAvailableRoomsToComboBox();
         cbRoom.setSelectedIndex(-1); // Tidak ada pilihan yang dipilih secara default
-
-        // Room Type
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
-        formPanel.add(new JLabel("Tipe Kamar:"), gbc);
-        cbRoomType = new JComboBox<>();
-        gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(cbRoomType, gbc);
 
         // Check-in Date
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;

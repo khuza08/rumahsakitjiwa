@@ -17,6 +17,10 @@ public class ConsultationSchedule {
     private Timestamp scheduledAt;
     private String notes;
     private String room; // Ruang konsultasi
+    private boolean inpatientRequired;
+    private String recommendedRoomType;
+    private String recommendedDuration;
+    private String admissionNotes;
 
     // Constructors
     public ConsultationSchedule() {}
@@ -39,6 +43,33 @@ public class ConsultationSchedule {
         this.scheduledAt = scheduledAt;
         this.notes = notes;
         this.room = room;
+    }
+
+    // Constructor yang lebih lengkap
+    public ConsultationSchedule(int id, int patientId, String patientCode, String patientName,
+                               int doctorId, String doctorCode, String doctorName,
+                               Timestamp consultationDate, String startTime, String endTime,
+                               String status, Timestamp scheduledAt, String notes, String room,
+                               boolean inpatientRequired, String recommendedRoomType,
+                               String recommendedDuration, String admissionNotes) {
+        this.id = id;
+        this.patientId = patientId;
+        this.patientCode = patientCode;
+        this.patientName = patientName;
+        this.doctorId = doctorId;
+        this.doctorCode = doctorCode;
+        this.doctorName = doctorName;
+        this.consultationDate = consultationDate;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = status;
+        this.scheduledAt = scheduledAt;
+        this.notes = notes;
+        this.room = room;
+        this.inpatientRequired = inpatientRequired;
+        this.recommendedRoomType = recommendedRoomType;
+        this.recommendedDuration = recommendedDuration;
+        this.admissionNotes = admissionNotes;
     }
 
     // Getters and Setters
@@ -83,4 +114,16 @@ public class ConsultationSchedule {
 
     public String getRoom() { return room; }
     public void setRoom(String room) { this.room = room; }
+
+    public boolean isInpatientRequired() { return inpatientRequired; }
+    public void setInpatientRequired(boolean inpatientRequired) { this.inpatientRequired = inpatientRequired; }
+
+    public String getRecommendedRoomType() { return recommendedRoomType; }
+    public void setRecommendedRoomType(String recommendedRoomType) { this.recommendedRoomType = recommendedRoomType; }
+
+    public String getRecommendedDuration() { return recommendedDuration; }
+    public void setRecommendedDuration(String recommendedDuration) { this.recommendedDuration = recommendedDuration; }
+
+    public String getAdmissionNotes() { return admissionNotes; }
+    public void setAdmissionNotes(String admissionNotes) { this.admissionNotes = admissionNotes; }
 }
