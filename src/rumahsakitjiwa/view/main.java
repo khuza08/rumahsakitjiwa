@@ -10,6 +10,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.sql.*;
 import rumahsakitjiwa.database.DatabaseConnection;
+import rumahsakitjiwa.view.RoomBookingPanel;
+import rumahsakitjiwa.view.ConsultationSchedulePanel;
+import rumahsakitjiwa.view.InpatientManagementPanel;
 
 public class main extends JFrame {
     private Point mousePoint;
@@ -21,7 +24,7 @@ public class main extends JFrame {
     
     private JPanel contentPanel;
     private CardLayout cardLayout;
-    
+
     private Dashboard dashboardPanel;
     private RoomCRUDPanel roomCRUDPanel;
     private DoctorCRUDPanel doctorCRUDPanel;
@@ -29,6 +32,9 @@ public class main extends JFrame {
     private ScheduleManagementPanel scheduleManagementPanel;
     private ReportPanel reportPanel;
     private ResepsionisCRUDPanel resepsionisCRUDPanel;
+    private RoomBookingPanel roomBookingPanel;
+    private ConsultationSchedulePanel consultationSchedulePanel;
+    private InpatientManagementPanel inpatientManagementPanel;
     
     private String userRole;
     private String userName;
@@ -99,25 +105,55 @@ public class main extends JFrame {
             scheduleManagementPanel = new ScheduleManagementPanel();
             resepsionisCRUDPanel = new ResepsionisCRUDPanel();
             reportPanel = new ReportPanel();
-            
-            roomCRUDPanel.setDashboard(dashboardPanel);
-            resepsionisCRUDPanel.setDashboard(dashboardPanel); // refresh, mayne used?
 
-            
+            // Panel baru untuk manajemen rawat inap
+            roomBookingPanel = new RoomBookingPanel();
+            consultationSchedulePanel = new ConsultationSchedulePanel();
+            inpatientManagementPanel = new InpatientManagementPanel();
+
+            roomCRUDPanel.setDashboard(dashboardPanel);
+            resepsionisCRUDPanel.setDashboard(dashboardPanel);
+            roomBookingPanel.setDashboard(dashboardPanel);
+            consultationSchedulePanel.setDashboard(dashboardPanel);
+            inpatientManagementPanel.setDashboard(dashboardPanel);
+
             contentPanel.add(doctorCRUDPanel, "DOKTER");
             contentPanel.add(roomCRUDPanel, "KAMAR");
             contentPanel.add(scheduleManagementPanel, "JADWAL");
             contentPanel.add(resepsionisCRUDPanel, "RESEPSIONIS");
             contentPanel.add(reportPanel, "LAPORAN");
-            
+            contentPanel.add(roomBookingPanel, "BOOKING");
+            contentPanel.add(consultationSchedulePanel, "KONSULTASI");
+            contentPanel.add(inpatientManagementPanel, "RAWATINAP");
+
         } else if ("resepsionis".equals(userRole)) {
-            contentPanel.add(createContentPanel("Data Dokter", 
+            // Panel baru untuk resepsionis
+            roomBookingPanel = new RoomBookingPanel();
+            consultationSchedulePanel = new ConsultationSchedulePanel();
+            inpatientManagementPanel = new InpatientManagementPanel();
+
+            roomBookingPanel.setUserRole(userRole);
+            consultationSchedulePanel.setUserRole(userRole);
+            inpatientManagementPanel.setUserRole(userRole);
+
+            roomBookingPanel.setDashboard(dashboardPanel);
+            consultationSchedulePanel.setDashboard(dashboardPanel);
+            inpatientManagementPanel.setDashboard(dashboardPanel);
+
+            contentPanel.add(pasienCRUDPanel, "PASIEN");
+            contentPanel.add(roomBookingPanel, "BOOKING");
+            contentPanel.add(consultationSchedulePanel, "KONSULTASI");
+            contentPanel.add(inpatientManagementPanel, "RAWATINAP");
+
+            contentPanel.add(createContentPanel("Data Dokter",
                 "Akses terbatas. Hubungi administrator untuk manajemen dokter."), "DOKTER");
-            contentPanel.add(createContentPanel("Data Kamar", 
+            contentPanel.add(createContentPanel("Data Kamar",
                 "Akses terbatas. Hubungi administrator untuk manajemen kamar."), "KAMAR");
             contentPanel.add(createContentPanel("Jadwal Dokter",
                 "Akses terbatas. Hubungi administrator untuk manajemen jadwal."), "JADWAL");
-            contentPanel.add(createContentPanel("Laporan", 
+            contentPanel.add(createContentPanel("Data Resepsionis",
+                "Akses terbatas. Hubungi administrator untuk manajemen resepsionis."), "RESEPSIONIS");
+            contentPanel.add(createContentPanel("Laporan",
                 "Akses terbatas. Hubungi administrator untuk laporan."), "LAPORAN");
         }
         
@@ -199,8 +235,8 @@ public class main extends JFrame {
         
         // Menu Items
             if ("admin".equals(userRole)) {
-                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal Dokter"};
-                String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "RESEPSIONIS", "JADWAL"};
+                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal Dokter", "Booking Kamar", "Jadwal Konsultasi", "Manajemen Rawat Inap"};
+                String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "RESEPSIONIS", "JADWAL", "BOOKING", "KONSULTASI", "RAWATINAP"};
 
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
@@ -209,11 +245,11 @@ public class main extends JFrame {
                 sidebarPanel.add(menuBtn);
                 sidebarPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Jarak antar menu
             }
-            
+
         } else if ("resepsionis".equals(userRole)) {
-            String[] menuItems = {"Dashboard", "Data Pasien", "Laporan"};
-            String[] menuKeys = {"DASHBOARD", "PASIEN", "LAPORAN"};
-            
+            String[] menuItems = {"Dashboard", "Data Pasien", "Booking Kamar", "Jadwal Konsultasi", "Manajemen Rawat Inap", "Laporan"};
+            String[] menuKeys = {"DASHBOARD", "PASIEN", "BOOKING", "KONSULTASI", "RAWATINAP", "LAPORAN"};
+
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
                 JButton menuBtn = createMenuButton(menuItems[i]);
