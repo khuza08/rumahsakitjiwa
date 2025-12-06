@@ -8,6 +8,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import com.toedter.calendar.JDateChooser;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.ConsultationSchedule;
 import rumahsakitjiwa.controller.ConsultationScheduleController;
@@ -17,17 +18,26 @@ import rumahsakitjiwa.utils.ConsultationScheduleHelper;
 public class ConsultationSchedulePanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable consultationTable;
-    private JTextField txtScheduleId, txtConsultationDate, txtStartTime, txtEndTime, txtRoom, txtRecommendedRoomType, txtRecommendedDuration, txtAdmissionNotes;
+    private JTextField txtScheduleId, txtRoom, txtRecommendedRoomType, txtRecommendedDuration, txtAdmissionNotes;
+    private JDateChooser dateChooser;  // For consultation date
+    private JSpinner spStartTime, spEndTime;  // Use JSpinner for time input
     private JComboBox<String> cbStatus, cbPatient, cbDoctor, cbInpatientRequired;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear, btnCheckAvailability;
     private JPanel inpatientDetailsPanel;
     private int selectedScheduleId = -1;
     private Dashboard dashboard;
     private String userRole;
-    
+
     // Menambahkan controller dan DAO sebagai properti kelas
     private ConsultationScheduleController controller;
     private ConsultationScheduleDataAccess dataAccess;
+
+    // Utility method to format time from JSpinner
+    private String formatTimeFromSpinner(JSpinner spinner) {
+        java.util.Date time = (java.util.Date) spinner.getValue();
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm");
+        return sdf.format(time);
+    }
 
     public ConsultationSchedulePanel() {
         this.controller = new ConsultationScheduleController();
@@ -106,9 +116,9 @@ public class ConsultationSchedulePanel extends JPanel {
         // Set combobox and field editability
         cbPatient.setEnabled(isResepsionis);
         cbDoctor.setEnabled(isResepsionis);
-        txtConsultationDate.setEditable(isResepsionis);
-        txtStartTime.setEditable(isResepsionis);
-        txtEndTime.setEditable(isResepsionis);
+        dateChooser.setEnabled(isResepsionis);
+        spStartTime.setEnabled(isResepsionis);
+        spEndTime.setEnabled(isResepsionis);
         txtRoom.setEditable(isResepsionis);
         cbStatus.setEnabled(isResepsionis && "admin".equalsIgnoreCase(userRole)); // Only admin can change status
 
@@ -196,23 +206,30 @@ public class ConsultationSchedulePanel extends JPanel {
         // Consultation Date
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Tanggal Konsultasi:"), gbc);
-        txtConsultationDate = new JTextField(15);
+        dateChooser = new JDateChooser();
+        dateChooser.setDateFormatString("yyyy-MM-dd");
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(txtConsultationDate, gbc);
+        formPanel.add(dateChooser, gbc);
 
         // Start Time
         gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Waktu Mulai:"), gbc);
-        txtStartTime = new JTextField(15);
+        spStartTime = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(spStartTime, "HH:mm");
+        spStartTime.setEditor(timeEditor);
+        spStartTime.setValue(java.util.Calendar.getInstance().getTime());
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(txtStartTime, gbc);
+        formPanel.add(spStartTime, gbc);
 
         // End Time
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Waktu Selesai:"), gbc);
-        txtEndTime = new JTextField(15);
+        spEndTime = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor timeEditor2 = new JSpinner.DateEditor(spEndTime, "HH:mm");
+        spEndTime.setEditor(timeEditor2);
+        spEndTime.setValue(java.util.Calendar.getInstance().getTime());
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(txtEndTime, gbc);
+        formPanel.add(spEndTime, gbc);
 
         // Room
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
@@ -416,7 +433,6 @@ public class ConsultationSchedulePanel extends JPanel {
 
     private void checkDoctorAvailability() {
         String selectedDoctor = (String) cbDoctor.getSelectedItem();
-        String consultationDate = txtConsultationDate.getText().trim();
 
         if (selectedDoctor == null || selectedDoctor.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Pilih dokter terlebih dahulu!");
@@ -424,19 +440,24 @@ public class ConsultationSchedulePanel extends JPanel {
             return;
         }
 
-        if (consultationDate.isEmpty()) {
+        if (dateChooser.getDate() == null) {
             JOptionPane.showMessageDialog(this, "Masukkan tanggal konsultasi terlebih dahulu!");
-            txtConsultationDate.requestFocus();
+            dateChooser.requestFocus();
             return;
         }
 
+        String consultationDate;
         try {
-            LocalDate date = LocalDate.parse(consultationDate);
-            if (date.isBefore(LocalDate.now())) {
+            // Convert Date to LocalDate
+            java.util.Date selectedDate = dateChooser.getDate();
+            LocalDate localDate = selectedDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            consultationDate = localDate.toString(); // Format as YYYY-MM-DD
+
+            if (localDate.isBefore(LocalDate.now())) {
                 JOptionPane.showMessageDialog(this, "Tanggal konsultasi tidak valid (harus hari ini atau di masa depan)!");
                 return;
             }
-        } catch (DateTimeParseException e) {
+        } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Format tanggal tidak valid! Gunakan format YYYY-MM-DD");
             return;
         }
@@ -450,10 +471,20 @@ public class ConsultationSchedulePanel extends JPanel {
             }
         }
 
+        // Get date from date chooser
+        LocalDate consultationLocalDate;
+        try {
+            // Convert Date to LocalDate
+            java.util.Date selectedDate = dateChooser.getDate();
+            consultationLocalDate = selectedDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Format tanggal tidak valid! Gunakan format YYYY-MM-DD");
+            return;
+        }
+
         // Cek ketersediaan jadwal dokter
         try (Connection conn = DatabaseConnection.getConnection()) {
             // Ambil hari dalam seminggu dari tanggal konsultasi
-            LocalDate consultationLocalDate = LocalDate.parse(consultationDate);
             String dayOfWeek = consultationLocalDate.getDayOfWeek().name();
 
             // Konversi ke nama hari Indonesia
@@ -481,7 +512,49 @@ public class ConsultationSchedulePanel extends JPanel {
     private void addSchedule() {
         if (!"resepsionis".equalsIgnoreCase(userRole)) return;
 
-        if (!controller.validateInput(txtConsultationDate, txtStartTime, txtEndTime, cbPatient, cbDoctor)) return;
+        String startTimeStr = formatTimeFromSpinner(spStartTime);
+        String endTimeStr = formatTimeFromSpinner(spEndTime);
+
+        if (cbPatient.getSelectedItem() == null || cbPatient.getSelectedItem().toString().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pasien harus dipilih!");
+            cbPatient.requestFocus();
+            return;
+        }
+
+        if (cbDoctor.getSelectedItem() == null || cbDoctor.getSelectedItem().toString().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Dokter harus dipilih!");
+            cbDoctor.requestFocus();
+            return;
+        }
+
+        if (dateChooser.getDate() == null) {
+            JOptionPane.showMessageDialog(this, "Tanggal konsultasi harus dipilih!");
+            dateChooser.requestFocus();
+            return;
+        }
+
+        try {
+            LocalDate consultationDate = dateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            if (consultationDate.isBefore(LocalDate.now())) {
+                JOptionPane.showMessageDialog(this, "Tanggal konsultasi tidak valid (harus hari ini atau di masa depan)!");
+                return;
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Format tanggal tidak valid! Gunakan format YYYY-MM-DD");
+            return;
+        }
+
+        try {
+            LocalTime startTime = LocalTime.parse(startTimeStr);
+            LocalTime endTime = LocalTime.parse(endTimeStr);
+            if (startTime.isAfter(endTime)) {
+                JOptionPane.showMessageDialog(this, "Waktu mulai harus sebelum waktu selesai!");
+                return;
+            }
+        } catch (DateTimeParseException e) {
+            JOptionPane.showMessageDialog(this, "Format waktu tidak valid! Gunakan format HH:MM");
+            return;
+        }
 
         try {
             // Ekstrak kode dan nama pasien dari combobox
@@ -508,20 +581,23 @@ public class ConsultationSchedulePanel extends JPanel {
                 }
             }
 
+            // Get date from JDateChooser
+            LocalDate consultationDate = dateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+
             // Validasi ketersediaan dokter untuk waktu yang dipilih
             if (!controller.isDoctorAvailableForTime(doctorCode,
-                                         LocalDate.parse(txtConsultationDate.getText().trim()),
-                                         LocalTime.parse(txtStartTime.getText().trim()),
-                                         LocalTime.parse(txtEndTime.getText().trim()))) {
+                                         consultationDate,
+                                         LocalTime.parse(startTimeStr),
+                                         LocalTime.parse(endTimeStr))) {
                 JOptionPane.showMessageDialog(this, "Dokter tidak tersedia pada waktu yang dipilih!");
                 return;
             }
 
             // Periksa apakah ada konflik jadwal untuk pasien
             if (controller.isPatientBusyAtTime(patientCode,
-                                   LocalDate.parse(txtConsultationDate.getText().trim()),
-                                   LocalTime.parse(txtStartTime.getText().trim()),
-                                   LocalTime.parse(txtEndTime.getText().trim()))) {
+                                   consultationDate,
+                                   LocalTime.parse(startTimeStr),
+                                   LocalTime.parse(endTimeStr))) {
                 JOptionPane.showMessageDialog(this, "Pasien sudah memiliki jadwal lain pada waktu yang dipilih!");
                 return;
             }
@@ -532,9 +608,9 @@ public class ConsultationSchedulePanel extends JPanel {
             schedule.setDoctorCode(doctorCode);
             schedule.setDoctorName(doctorName);
             schedule.setConsultationDate(java.sql.Timestamp.valueOf(
-                LocalDate.parse(txtConsultationDate.getText().trim()).atTime(0, 0)));
-            schedule.setStartTime(txtStartTime.getText().trim());
-            schedule.setEndTime(txtEndTime.getText().trim());
+                consultationDate.atTime(0, 0)));
+            schedule.setStartTime(startTimeStr);
+            schedule.setEndTime(endTimeStr);
             schedule.setStatus((String) cbStatus.getSelectedItem());
             schedule.setRoom(txtRoom.getText().trim());
 
@@ -565,7 +641,49 @@ public class ConsultationSchedulePanel extends JPanel {
             return;
         }
 
-        if (!controller.validateInput(txtConsultationDate, txtStartTime, txtEndTime, cbPatient, cbDoctor)) return;
+        String startTimeStr = formatTimeFromSpinner(spStartTime);
+        String endTimeStr = formatTimeFromSpinner(spEndTime);
+
+        if (cbPatient.getSelectedItem() == null || cbPatient.getSelectedItem().toString().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Pasien harus dipilih!");
+            cbPatient.requestFocus();
+            return;
+        }
+
+        if (cbDoctor.getSelectedItem() == null || cbDoctor.getSelectedItem().toString().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Dokter harus dipilih!");
+            cbDoctor.requestFocus();
+            return;
+        }
+
+        if (dateChooser.getDate() == null) {
+            JOptionPane.showMessageDialog(this, "Tanggal konsultasi harus dipilih!");
+            dateChooser.requestFocus();
+            return;
+        }
+
+        try {
+            LocalDate consultationDate = dateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            if (consultationDate.isBefore(LocalDate.now())) {
+                JOptionPane.showMessageDialog(this, "Tanggal konsultasi tidak valid (harus hari ini atau di masa depan)!");
+                return;
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Format tanggal tidak valid! Gunakan format YYYY-MM-DD");
+            return;
+        }
+
+        try {
+            LocalTime startTime = LocalTime.parse(startTimeStr);
+            LocalTime endTime = LocalTime.parse(endTimeStr);
+            if (startTime.isAfter(endTime)) {
+                JOptionPane.showMessageDialog(this, "Waktu mulai harus sebelum waktu selesai!");
+                return;
+            }
+        } catch (DateTimeParseException e) {
+            JOptionPane.showMessageDialog(this, "Format waktu tidak valid! Gunakan format HH:MM");
+            return;
+        }
 
         try {
             // Ekstrak kode dan nama pasien dari combobox
@@ -592,20 +710,23 @@ public class ConsultationSchedulePanel extends JPanel {
                 }
             }
 
+            // Get date from JDateChooser
+            LocalDate consultationLocalDate = dateChooser.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+
             // Validasi ketersediaan dokter untuk waktu yang dipilih
             if (!controller.isDoctorAvailableForTime(doctorCode,
-                                         LocalDate.parse(txtConsultationDate.getText().trim()),
-                                         LocalTime.parse(txtStartTime.getText().trim()),
-                                         LocalTime.parse(txtEndTime.getText().trim()))) {
+                                         consultationLocalDate,
+                                         LocalTime.parse(startTimeStr),
+                                         LocalTime.parse(endTimeStr))) {
                 JOptionPane.showMessageDialog(this, "Dokter tidak tersedia pada waktu yang dipilih!");
                 return;
             }
 
             // Periksa apakah ada konflik jadwal untuk pasien (kecuali jadwal yang sedang diupdate)
             if (controller.isPatientBusyAtTime(patientCode,
-                                   LocalDate.parse(txtConsultationDate.getText().trim()),
-                                   LocalTime.parse(txtStartTime.getText().trim()),
-                                   LocalTime.parse(txtEndTime.getText().trim()),
+                                   consultationLocalDate,
+                                   LocalTime.parse(startTimeStr),
+                                   LocalTime.parse(endTimeStr),
                                    selectedScheduleId)) {
                 JOptionPane.showMessageDialog(this, "Pasien sudah memiliki jadwal lain pada waktu yang dipilih!");
                 return;
@@ -618,9 +739,9 @@ public class ConsultationSchedulePanel extends JPanel {
             schedule.setDoctorCode(doctorCode);
             schedule.setDoctorName(doctorName);
             schedule.setConsultationDate(java.sql.Timestamp.valueOf(
-                LocalDate.parse(txtConsultationDate.getText().trim()).atTime(0, 0)));
-            schedule.setStartTime(txtStartTime.getText().trim());
-            schedule.setEndTime(txtEndTime.getText().trim());
+                consultationLocalDate.atTime(0, 0)));
+            schedule.setStartTime(startTimeStr);
+            schedule.setEndTime(endTimeStr);
             schedule.setStatus((String) cbStatus.getSelectedItem());
             schedule.setRoom(txtRoom.getText().trim());
 
@@ -670,9 +791,10 @@ public class ConsultationSchedulePanel extends JPanel {
         txtScheduleId.setText("");
         cbPatient.setSelectedIndex(-1);
         cbDoctor.setSelectedIndex(-1);
-        txtConsultationDate.setText("");
-        txtStartTime.setText("");
-        txtEndTime.setText("");
+        dateChooser.setDate(null);
+        java.util.Date currentTime = new java.util.Date();
+        spStartTime.setValue(currentTime);
+        spEndTime.setValue(currentTime);
         txtRoom.setText("");
         cbStatus.setSelectedItem("Scheduled");
         cbInpatientRequired.setSelectedItem("Tidak");
@@ -707,12 +829,28 @@ public class ConsultationSchedulePanel extends JPanel {
             cbDoctor.setSelectedItem(doctorInfo);
 
             String dateStr = tableModel.getValueAt(selectedRow, 5).toString();
-            txtConsultationDate.setText(dateStr.substring(0, 10));
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+            try {
+                java.util.Date date = sdf.parse(dateStr.substring(0, 10));
+                dateChooser.setDate(date);
+            } catch (Exception e) {
+                dateChooser.setDate(null);
+            }
+
             String timeStr = (String) tableModel.getValueAt(selectedRow, 6);
             String[] times = timeStr.split(" - ");
             if (times.length == 2) {
-                txtStartTime.setText(times[0]);
-                txtEndTime.setText(times[1]);
+                try {
+                    java.text.SimpleDateFormat timeFormat = new java.text.SimpleDateFormat("HH:mm");
+                    java.util.Date startTime = timeFormat.parse(times[0]);
+                    java.util.Date endTime = timeFormat.parse(times[1]);
+                    spStartTime.setValue(startTime);
+                    spEndTime.setValue(endTime);
+                } catch (Exception e) {
+                    System.out.println("Error parsing time: " + e.getMessage());
+                    spStartTime.setValue(new java.util.Date());
+                    spEndTime.setValue(new java.util.Date());
+                }
             }
             cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 7));
             txtRoom.setText((String) tableModel.getValueAt(selectedRow, 8));
@@ -781,7 +919,13 @@ public class ConsultationSchedulePanel extends JPanel {
 
             String recommendedRoomType = txtRecommendedRoomType.getText().trim();
             String admissionNotes = txtAdmissionNotes.getText().trim();
-            String consultationDateStr = txtConsultationDate.getText().trim();
+
+            // Get consultation date from date chooser
+            String consultationDateStr = "";
+            if (dateChooser.getDate() != null) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                consultationDateStr = sdf.format(dateChooser.getDate());
+            }
 
             // Buka form booking kamar dengan informasi dari konsultasi
             openBookingForm(patientCode, patientName, doctorCode, doctorName, recommendedRoomType, consultationDateStr, admissionNotes);
