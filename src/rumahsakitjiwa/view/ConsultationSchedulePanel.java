@@ -18,12 +18,11 @@ import rumahsakitjiwa.utils.ConsultationScheduleHelper;
 public class ConsultationSchedulePanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable consultationTable;
-    private JTextField txtScheduleId, txtRecommendedRoomType, txtRecommendedDuration, txtAdmissionNotes;
+    private JTextField txtScheduleId;
     private JDateChooser dateChooser;  // For consultation date
     private JSpinner spStartTime, spEndTime;  // Use JSpinner for time input
     private JComboBox<String> cbStatus, cbPatient, cbDoctor, cbInpatientRequired, cbRoomType, cbRoom;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear, btnCheckAvailability;
-    private JPanel inpatientDetailsPanel;
     private int selectedScheduleId = -1;
     private Dashboard dashboard;
     private String userRole;
@@ -304,57 +303,13 @@ public class ConsultationSchedulePanel extends JPanel {
         formPanel.add(cbStatus, gbc);
 
         // Inpatient Required
-        gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 11; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Perlu Rawat Inap:"), gbc);
         cbInpatientRequired = new JComboBox<>(new String[]{"Tidak", "Ya"});
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(cbInpatientRequired, gbc);
 
-        // Panel terpisah untuk detail rawat inap (akan disembunyikan secara default)
-        inpatientDetailsPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbcDetail = new GridBagConstraints();
-        gbcDetail.insets = new Insets(2, 5, 2, 5);
-        gbcDetail.anchor = GridBagConstraints.WEST;
-
-        inpatientDetailsPanel.setBorder(BorderFactory.createTitledBorder("Detail Rawat Inap"));
-        inpatientDetailsPanel.setVisible(false); // Default disembunyikan
-
-        gbcDetail.gridx = 0; gbcDetail.gridy = 0;
-        inpatientDetailsPanel.add(new JLabel("Tipe Kamar Rekomendasi:"), gbcDetail);
-        txtRecommendedRoomType = new JTextField(10);
-        gbcDetail.gridx = 1;
-        inpatientDetailsPanel.add(txtRecommendedRoomType, gbcDetail);
-
-        gbcDetail.gridx = 0; gbcDetail.gridy = 1;
-        inpatientDetailsPanel.add(new JLabel("Durasi Perkiraan (hari):"), gbcDetail);
-        txtRecommendedDuration = new JTextField(10);
-        gbcDetail.gridx = 1;
-        inpatientDetailsPanel.add(txtRecommendedDuration, gbcDetail);
-
-        gbcDetail.gridx = 0; gbcDetail.gridy = 2; gbcDetail.gridwidth = 2;
-        inpatientDetailsPanel.add(new JLabel("Catatan Rawat Inap:"), gbcDetail);
-        gbcDetail.gridy = 3;
-        gbcDetail.fill = GridBagConstraints.HORIZONTAL;
-        gbcDetail.weightx = 1.0;
-        gbcDetail.ipady = 20; // Tinggi tetap untuk text area
-        txtAdmissionNotes = new JTextField(10);
-        inpatientDetailsPanel.add(txtAdmissionNotes, gbcDetail);
-
-        // Atur ukuran maksimum panel untuk mencegah tampilan tidak seimbang
-        inpatientDetailsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
-
-        gbc.gridx = 0; gbc.gridy = 11; gbc.gridwidth = 3;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 10, 10, 10);
-        formPanel.add(inpatientDetailsPanel, gbc);
-
-        // Listener untuk menampilkan/menyembunyikan panel detail rawat inap
-        cbInpatientRequired.addActionListener(e -> {
-            String selected = (String) cbInpatientRequired.getSelectedItem();
-            inpatientDetailsPanel.setVisible("Ya".equals(selected));
-            formPanel.revalidate();
-            formPanel.repaint();
-        });
+        // No inpatient details panel - removed as requested
 
         // Buttons
         JPanel buttonPanel = new JPanel(new GridLayout(3, 2, 5, 5));
@@ -681,14 +636,8 @@ public class ConsultationSchedulePanel extends JPanel {
                     roomNumber = roomInfo;
                 }
             }
-            schedule.setRoom(roomNumber);
-
             // Tambahkan data kebutuhan rawat inap
             schedule.setInpatientRequired("Ya".equals(cbInpatientRequired.getSelectedItem()));
-            schedule.setRecommendedRoomType(txtRecommendedRoomType.getText().trim());
-            schedule.setRecommendedDuration(txtRecommendedDuration.getText().trim());
-            schedule.setAdmissionNotes(txtAdmissionNotes.getText().trim());
-            schedule.setRoom(roomNumber);  // Set the room number from the selected room
 
             if (dataAccess.insertSchedule(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal konsultasi berhasil ditambahkan!");
@@ -829,9 +778,6 @@ public class ConsultationSchedulePanel extends JPanel {
 
             // Tambahkan data kebutuhan rawat inap
             schedule.setInpatientRequired("Ya".equals(cbInpatientRequired.getSelectedItem()));
-            schedule.setRecommendedRoomType(txtRecommendedRoomType.getText().trim());
-            schedule.setRecommendedDuration(txtRecommendedDuration.getText().trim());
-            schedule.setAdmissionNotes(txtAdmissionNotes.getText().trim());
 
             if (dataAccess.updateScheduleInDB(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal konsultasi berhasil diupdate!");
@@ -881,16 +827,8 @@ public class ConsultationSchedulePanel extends JPanel {
         cbRoom.setSelectedIndex(-1);
         cbStatus.setSelectedItem("Scheduled");
         cbInpatientRequired.setSelectedItem("Tidak");
-        txtRecommendedRoomType.setText("");
-        txtRecommendedDuration.setText("");
-        txtAdmissionNotes.setText("");
         selectedScheduleId = -1;
         consultationTable.clearSelection();
-
-        // Sembunyikan panel detail rawat inap saat form dibersihkan
-        if (inpatientDetailsPanel != null) {
-            inpatientDetailsPanel.setVisible(false);
-        }
 
         loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
     }
@@ -956,13 +894,6 @@ public class ConsultationSchedulePanel extends JPanel {
             Object inpatientRequiredObj = tableModel.getValueAt(selectedRow, 9); // kolom ke-9 adalah inpatient_required
             boolean inpatientRequired = inpatientRequiredObj != null && Boolean.TRUE.equals(inpatientRequiredObj);
             cbInpatientRequired.setSelectedItem(inpatientRequired ? "Ya" : "Tidak");
-
-            txtRecommendedRoomType.setText((String) tableModel.getValueAt(selectedRow, 10)); // recommended_room_type
-            txtRecommendedDuration.setText((String) tableModel.getValueAt(selectedRow, 11)); // recommended_duration
-            txtAdmissionNotes.setText((String) tableModel.getValueAt(selectedRow, 12)); // admission_notes
-
-            // Tampilkan panel detail jika diperlukan rawat inap
-            inpatientDetailsPanel.setVisible("Ya".equals(cbInpatientRequired.getSelectedItem()));
         }
     }
 
@@ -1014,8 +945,9 @@ public class ConsultationSchedulePanel extends JPanel {
                 }
             }
 
-            String recommendedRoomType = txtRecommendedRoomType.getText().trim();
-            String admissionNotes = txtAdmissionNotes.getText().trim();
+            // For now, we'll pass empty values since the fields are removed
+            String recommendedRoomType = "";
+            String admissionNotes = "";
 
             // Get consultation date from date chooser
             String consultationDateStr = "";
