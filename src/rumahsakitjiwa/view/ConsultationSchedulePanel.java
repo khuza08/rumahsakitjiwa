@@ -18,10 +18,10 @@ import rumahsakitjiwa.utils.ConsultationScheduleHelper;
 public class ConsultationSchedulePanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable consultationTable;
-    private JTextField txtScheduleId, txtRoom, txtRecommendedRoomType, txtRecommendedDuration, txtAdmissionNotes;
+    private JTextField txtScheduleId, txtRecommendedRoomType, txtRecommendedDuration, txtAdmissionNotes;
     private JDateChooser dateChooser;  // For consultation date
     private JSpinner spStartTime, spEndTime;  // Use JSpinner for time input
-    private JComboBox<String> cbStatus, cbPatient, cbDoctor, cbInpatientRequired;
+    private JComboBox<String> cbStatus, cbPatient, cbDoctor, cbInpatientRequired, cbRoomType, cbRoom;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear, btnCheckAvailability;
     private JPanel inpatientDetailsPanel;
     private int selectedScheduleId = -1;
@@ -45,10 +45,60 @@ public class ConsultationSchedulePanel extends JPanel {
         initComponents();
         setupTable();
         loadSchedules();
+        loadRoomTypes();  // Load room types after initialization
+        loadAvailableRoomsToComboBox();  // Load available rooms
 
         // Tambahkan listener untuk combobox pasien dan dokter
         cbPatient.addActionListener(e -> updatePatientInfo());
         cbDoctor.addActionListener(e -> updateDoctorInfo());
+        // Add listener for room type to filter room numbers
+        cbRoomType.addActionListener(e -> updateRoomsForType());
+        // Add listener for room selection to update room type
+        cbRoom.addActionListener(e -> updateRoomInfo());
+    }
+
+    private void updateRoomsForType() {
+        String selectedRoomType = (String) cbRoomType.getSelectedItem();
+        cbRoom.removeAllItems();
+        if (selectedRoomType == null || selectedRoomType.isEmpty()) {
+            try (Connection conn = DatabaseConnection.getConnection()) {
+                String sql = "SELECT room_number, room_type FROM rooms WHERE status = 'Tersedia' ORDER BY room_number";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    String roomInfo = rs.getString("room_number") + " (" + rs.getString("room_type") + ")";
+                    cbRoom.addItem(roomInfo);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try (Connection conn = DatabaseConnection.getConnection()) {
+                String sql = "SELECT room_number, room_type FROM rooms WHERE room_type = ? AND status = 'Tersedia' ORDER BY room_number";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, selectedRoomType);
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    String roomInfo = rs.getString("room_number") + " (" + rs.getString("room_type") + ")";
+                    cbRoom.addItem(roomInfo);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void updateRoomInfo() {
+        String selectedRoom = (String) cbRoom.getSelectedItem();
+        if (selectedRoom != null && !selectedRoom.isEmpty()) {
+            // Ekstrak room type dari format "room_number (room_type)"
+            int openParenIndex = selectedRoom.indexOf('(');
+            if (openParenIndex > 0) {
+                // Ekstrak room type dari dalam tanda kurung
+                String roomType = selectedRoom.substring(openParenIndex + 1, selectedRoom.length() - 1);
+                cbRoomType.setSelectedItem(roomType);
+            }
+        }
     }
 
     private void loadPatientsToComboBox() {
@@ -119,7 +169,8 @@ public class ConsultationSchedulePanel extends JPanel {
         dateChooser.setEnabled(isResepsionis);
         spStartTime.setEnabled(isResepsionis);
         spEndTime.setEnabled(isResepsionis);
-        txtRoom.setEditable(isResepsionis);
+        cbRoomType.setEnabled(isResepsionis);
+        cbRoom.setEnabled(isResepsionis);
         cbStatus.setEnabled(isResepsionis && "admin".equalsIgnoreCase(userRole)); // Only admin can change status
 
         // Set button visibility
@@ -231,15 +282,22 @@ public class ConsultationSchedulePanel extends JPanel {
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(spEndTime, gbc);
 
-        // Room
+        // Room Type
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
-        formPanel.add(new JLabel("Ruangan:"), gbc);
-        txtRoom = new JTextField(15);
+        formPanel.add(new JLabel("Tipe Kamar:"), gbc);
+        cbRoomType = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(txtRoom, gbc);
+        formPanel.add(cbRoomType, gbc);
+
+        // Room Selection
+        gbc.gridx = 0; gbc.gridy = 9; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Pilih Kamar:"), gbc);
+        cbRoom = new JComboBox<>();
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(cbRoom, gbc);
 
         // Status
-        gbc.gridx = 0; gbc.gridy = 9; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Status:"), gbc);
         cbStatus = new JComboBox<>(new String[]{"Scheduled", "Completed", "Cancelled", "No-show"});
         gbc.gridx = 1; gbc.gridwidth = 2;
@@ -612,18 +670,31 @@ public class ConsultationSchedulePanel extends JPanel {
             schedule.setStartTime(startTimeStr);
             schedule.setEndTime(endTimeStr);
             schedule.setStatus((String) cbStatus.getSelectedItem());
-            schedule.setRoom(txtRoom.getText().trim());
+            // Extract room number from the selected room format "room_number (room_type)"
+            String roomInfo = (String) cbRoom.getSelectedItem();
+            String roomNumber = "";
+            if (roomInfo != null && !roomInfo.isEmpty()) {
+                int endIndex = roomInfo.indexOf(' ');
+                if (endIndex > 0) {
+                    roomNumber = roomInfo.substring(0, endIndex);
+                } else {
+                    roomNumber = roomInfo;
+                }
+            }
+            schedule.setRoom(roomNumber);
 
             // Tambahkan data kebutuhan rawat inap
             schedule.setInpatientRequired("Ya".equals(cbInpatientRequired.getSelectedItem()));
             schedule.setRecommendedRoomType(txtRecommendedRoomType.getText().trim());
             schedule.setRecommendedDuration(txtRecommendedDuration.getText().trim());
             schedule.setAdmissionNotes(txtAdmissionNotes.getText().trim());
+            schedule.setRoom(roomNumber);  // Set the room number from the selected room
 
             if (dataAccess.insertSchedule(schedule)) {
                 JOptionPane.showMessageDialog(this, "Jadwal konsultasi berhasil ditambahkan!");
                 loadSchedules();
                 clearForm();
+                loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
                 if (dashboard != null) dashboard.refreshDashboard();
             } else {
                 JOptionPane.showMessageDialog(this, "Gagal menambah jadwal konsultasi!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -743,7 +814,18 @@ public class ConsultationSchedulePanel extends JPanel {
             schedule.setStartTime(startTimeStr);
             schedule.setEndTime(endTimeStr);
             schedule.setStatus((String) cbStatus.getSelectedItem());
-            schedule.setRoom(txtRoom.getText().trim());
+            // Extract room number from the selected room format "room_number (room_type)"
+            String roomInfo = (String) cbRoom.getSelectedItem();
+            String roomNumber = "";
+            if (roomInfo != null && !roomInfo.isEmpty()) {
+                int endIndex = roomInfo.indexOf(' ');
+                if (endIndex > 0) {
+                    roomNumber = roomInfo.substring(0, endIndex);
+                } else {
+                    roomNumber = roomInfo;
+                }
+            }
+            schedule.setRoom(roomNumber);
 
             // Tambahkan data kebutuhan rawat inap
             schedule.setInpatientRequired("Ya".equals(cbInpatientRequired.getSelectedItem()));
@@ -795,7 +877,8 @@ public class ConsultationSchedulePanel extends JPanel {
         java.util.Date currentTime = new java.util.Date();
         spStartTime.setValue(currentTime);
         spEndTime.setValue(currentTime);
-        txtRoom.setText("");
+        cbRoomType.setSelectedIndex(-1);
+        cbRoom.setSelectedIndex(-1);
         cbStatus.setSelectedItem("Scheduled");
         cbInpatientRequired.setSelectedItem("Tidak");
         txtRecommendedRoomType.setText("");
@@ -808,6 +891,8 @@ public class ConsultationSchedulePanel extends JPanel {
         if (inpatientDetailsPanel != null) {
             inpatientDetailsPanel.setVisible(false);
         }
+
+        loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
     }
 
     private void loadSelectedSchedule() {
@@ -853,7 +938,19 @@ public class ConsultationSchedulePanel extends JPanel {
                 }
             }
             cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 7));
-            txtRoom.setText((String) tableModel.getValueAt(selectedRow, 8));
+
+            // Set the room based on the stored room number
+            String roomNumber = (String) tableModel.getValueAt(selectedRow, 8);
+            if (roomNumber != null && !roomNumber.isEmpty()) {
+                // Find the room in the combobox that matches the stored room number
+                for (int i = 0; i < cbRoom.getItemCount(); i++) {
+                    String roomInfo = cbRoom.getItemAt(i);
+                    if (roomInfo.startsWith(roomNumber + " ")) {
+                        cbRoom.setSelectedItem(roomInfo);
+                        break;
+                    }
+                }
+            }
 
             // Load data tambahan untuk kebutuhan rawat inap
             Object inpatientRequiredObj = tableModel.getValueAt(selectedRow, 9); // kolom ke-9 adalah inpatient_required
@@ -929,6 +1026,35 @@ public class ConsultationSchedulePanel extends JPanel {
 
             // Buka form booking kamar dengan informasi dari konsultasi
             openBookingForm(patientCode, patientName, doctorCode, doctorName, recommendedRoomType, consultationDateStr, admissionNotes);
+        }
+    }
+
+    private void loadRoomTypes() {
+        cbRoomType.removeAllItems();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                cbRoomType.addItem(rs.getString("room_type"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadAvailableRoomsToComboBox() {
+        cbRoom.removeAllItems();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT room_number, room_type FROM rooms WHERE status = 'Tersedia' ORDER BY room_number";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String roomInfo = rs.getString("room_number") + " (" + rs.getString("room_type") + ")";
+                cbRoom.addItem(roomInfo);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
