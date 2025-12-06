@@ -46,6 +46,7 @@ public class ConsultationSchedulePanel extends JPanel {
         loadSchedules();
         loadRoomTypes();  // Load room types after initialization
         loadAvailableRoomsToComboBox();  // Load available rooms
+        // Don't load doctors initially - will be loaded when date is selected
 
         // Tambahkan listener untuk combobox pasien dan dokter
         cbPatient.addActionListener(e -> updatePatientInfo());
@@ -54,6 +55,62 @@ public class ConsultationSchedulePanel extends JPanel {
         cbRoomType.addActionListener(e -> updateRoomsForType());
         // Add listener for room selection to update room type
         cbRoom.addActionListener(e -> updateRoomInfo());
+        // Add listener for date chooser to filter doctors based on selected day
+        dateChooser.getDateEditor().addPropertyChangeListener(e -> {
+            if ("date".equals(e.getPropertyName())) {
+                updateDoctorsForSelectedDate();
+            }
+        });
+    }
+
+    private void updateDoctorsForSelectedDate() {
+        // If no date is selected, keep the combobox empty
+        if (dateChooser.getDate() == null) {
+            cbDoctor.removeAllItems();
+            return;
+        }
+
+        // Get the selected date and determine the day of week
+        java.util.Date selectedDate = dateChooser.getDate();
+        java.time.LocalDate localDate = selectedDate.toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate();
+
+        // Get the day of week in English (e.g., "MONDAY", "TUESDAY", etc.)
+        String dayOfWeek = localDate.getDayOfWeek().name();
+
+        // Convert to Indonesian day name
+        String indoDay = getIndonesianDay(dayOfWeek);
+
+        cbDoctor.removeAllItems();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // Query to find doctors who have schedules on the selected day
+            String sql = "SELECT d.doctor_code, d.full_name FROM doctors d " +
+                        "JOIN schedules s ON d.doctor_code = s.doctor_code " +
+                        "WHERE FIND_IN_SET(?, s.days) > 0 AND s.is_active = 1 AND d.status = 'Aktif'";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, indoDay);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String doctorInfo = rs.getString("doctor_code") + " - " + rs.getString("full_name");
+                cbDoctor.addItem(doctorInfo);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getIndonesianDay(String englishDay) {
+        switch (englishDay) {
+            case "MONDAY": return "Senin";
+            case "TUESDAY": return "Selasa";
+            case "WEDNESDAY": return "Rabu";
+            case "THURSDAY": return "Kamis";
+            case "FRIDAY": return "Jumat";
+            case "SATURDAY": return "Sabtu";
+            case "SUNDAY": return "Minggu";
+            default: return englishDay; // Return original if not found
+        }
     }
 
     private void updateRoomsForType() {
@@ -100,6 +157,21 @@ public class ConsultationSchedulePanel extends JPanel {
         }
     }
 
+    private void loadDoctorsToComboBox() {
+        cbDoctor.removeAllItems();
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT doctor_code, full_name FROM doctors WHERE status = 'Aktif' ORDER BY doctor_code";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String doctorInfo = rs.getString("doctor_code") + " - " + rs.getString("full_name");
+                cbDoctor.addItem(doctorInfo);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void loadPatientsToComboBox() {
         cbPatient.removeAllItems();
         try (Connection conn = DatabaseConnection.getConnection()) {
@@ -115,20 +187,6 @@ public class ConsultationSchedulePanel extends JPanel {
         }
     }
 
-    private void loadDoctorsToComboBox() {
-        cbDoctor.removeAllItems();
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT doctor_code, full_name FROM doctors ORDER BY doctor_code";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                String doctorInfo = rs.getString("doctor_code") + " - " + rs.getString("full_name");
-                cbDoctor.addItem(doctorInfo);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     private void updatePatientInfo() {
         String selectedPatient = (String) cbPatient.getSelectedItem();
@@ -265,7 +323,7 @@ public class ConsultationSchedulePanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Waktu Mulai:"), gbc);
         spStartTime = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(spStartTime, "HH:mm");
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(spStartTime, "hh:mm a");
         spStartTime.setEditor(timeEditor);
         spStartTime.setValue(java.util.Calendar.getInstance().getTime());
         gbc.gridx = 1; gbc.gridwidth = 2;
@@ -275,7 +333,7 @@ public class ConsultationSchedulePanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Waktu Selesai:"), gbc);
         spEndTime = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor timeEditor2 = new JSpinner.DateEditor(spEndTime, "HH:mm");
+        JSpinner.DateEditor timeEditor2 = new JSpinner.DateEditor(spEndTime, "hh:mm a");
         spEndTime.setEditor(timeEditor2);
         spEndTime.setValue(java.util.Calendar.getInstance().getTime());
         gbc.gridx = 1; gbc.gridwidth = 2;
@@ -830,6 +888,7 @@ public class ConsultationSchedulePanel extends JPanel {
         selectedScheduleId = -1;
         consultationTable.clearSelection();
 
+        loadDoctorsToComboBox(); // Reload all doctors
         loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
     }
 
@@ -856,6 +915,8 @@ public class ConsultationSchedulePanel extends JPanel {
             try {
                 java.util.Date date = sdf.parse(dateStr.substring(0, 10));
                 dateChooser.setDate(date);
+                // After setting date, trigger the update to filter doctors for that date
+                updateDoctorsForSelectedDate();
             } catch (Exception e) {
                 dateChooser.setDate(null);
             }
