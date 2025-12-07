@@ -61,6 +61,23 @@ public class PasienCRUDPanel extends JPanel {
             super.insertString(offs, str, a);
         }
     }
+
+    // Kelas untuk membatasi input hanya huruf alfabet dan spasi pada Nama
+    private static class AlphaDocument extends javax.swing.text.PlainDocument {
+        @Override
+        public void insertString(int offs, String str, javax.swing.text.AttributeSet a) throws javax.swing.text.BadLocationException {
+            if (str == null) return;
+
+            // Hanya izinkan karakter huruf alfabet dan spasi
+            for (char c : str.toCharArray()) {
+                if (!Character.isLetter(c) && !Character.isWhitespace(c)) {
+                    return; // Jangan masukkan karakter non-huruf
+                }
+            }
+
+            super.insertString(offs, str, a);
+        }
+    }
     private DefaultTableModel tableModel;
     private JTable pasienTable;
     private JTextField txtPatientCode, txtFullName, txtNIK, txtAddress, txtPhone;
@@ -174,6 +191,7 @@ public class PasienCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         txtFullName = new JTextField(15);
+        txtFullName.setDocument(new AlphaDocument()); // Terapkan custom document untuk hanya huruf alfabet dan spasi
         formPanel.add(txtFullName, gbc);
 
         // NIK
@@ -220,6 +238,7 @@ public class PasienCRUDPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         txtFamilyName = new JTextField(15);
+        txtFamilyName.setDocument(new AlphaDocument()); // Terapkan custom document untuk hanya huruf alfabet dan spasi
         formPanel.add(txtFamilyName, gbc);
 
         // Alamat Keluarga
