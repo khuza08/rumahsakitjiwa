@@ -137,8 +137,14 @@ public class RoomBookingPanel extends JPanel {
         formPanel.add(cbRoom, gbc);
 
         // Load available rooms into the combobox
-        loadAvailableRoomsToComboBox();
-        cbRoom.setSelectedIndex(-1); // Tidak ada pilihan yang dipilih secara default
+        loadRoomTypes();  // Load room types first
+        cbRoomType.setSelectedIndex(-1); // Set room type to null initially
+        cbRoom.setSelectedIndex(-1);     // Set room to null initially
+
+        // Add listener for room type to filter room numbers
+        cbRoomType.addActionListener(e -> updateRoomsForType());
+        // Add listener for room selection to update room type
+        cbRoom.addActionListener(e -> updateRoomInfo());
 
         // Check-in Date
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
@@ -207,11 +213,9 @@ public class RoomBookingPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formPanel.add(buttonPanel, gbc);
 
-        loadRoomTypes();
-
-        // Tambahkan listener untuk combobox pasien dan kamar
+        // Tambahkan listener untuk combobox pasien
         cbPatient.addActionListener(e -> updatePatientInfo());
-        cbRoom.addActionListener(e -> updateRoomInfo());
+        // cbRoom listener sudah ditambahkan sebelumnya saat inisialisasi
 
         return formPanel;
     }
@@ -369,10 +373,32 @@ public class RoomBookingPanel extends JPanel {
         }
     }
 
+    private void updateRoomsForType() {
+        String selectedRoomType = (String) cbRoomType.getSelectedItem();
+        cbRoom.removeAllItems();
+        if (selectedRoomType == null || selectedRoomType.isEmpty()) {
+            // When no room type is selected, keep room combobox empty
+            return;
+        } else {
+            try (Connection conn = DatabaseConnection.getConnection()) {
+                String sql = "SELECT room_number, room_type FROM rooms WHERE room_type = ? AND status = 'Tersedia' ORDER BY room_number";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, selectedRoomType);
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    String roomInfo = rs.getString("room_number") + " (" + rs.getString("room_type") + ")";
+                    cbRoom.addItem(roomInfo);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void updateRoomInfo() {
         String selectedRoom = (String) cbRoom.getSelectedItem();
         if (selectedRoom != null && !selectedRoom.isEmpty()) {
-            // Ekstrak room number dari format "room_number (room_type)"
+            // Ekstrak room type dari format "room_number (room_type)"
             int openParenIndex = selectedRoom.indexOf('(');
             if (openParenIndex > 0) {
                 // Ekstrak room type dari dalam tanda kurung
@@ -429,7 +455,7 @@ public class RoomBookingPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Booking kamar berhasil ditambahkan!");
                 loadBookings();
                 clearForm();
-                loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
+                loadRoomTypes(); // Refresh daftar tipe kamar
                 if (dashboard != null) dashboard.refreshDashboard();
             } else {
                 JOptionPane.showMessageDialog(this, "Gagal menambah booking kamar!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -492,7 +518,7 @@ public class RoomBookingPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Booking kamar berhasil diupdate!");
                 loadBookings();
                 clearForm();
-                loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
+                loadRoomTypes(); // Refresh daftar tipe kamar
                 if (dashboard != null) dashboard.refreshDashboard();
             } else {
                 JOptionPane.showMessageDialog(this, "Gagal mengupdate booking kamar!", "Error", JOptionPane.ERROR_MESSAGE);
