@@ -305,8 +305,8 @@ public class ConsultationSchedulePanel extends JPanel {
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(cbDoctor, gbc);
 
-        // Load doctors into the combobox
-        loadDoctorsToComboBox();
+        // Don't load doctors initially - only load when date is selected
+        cbDoctor.removeAllItems();
 
         // Consultation Date
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
@@ -878,7 +878,7 @@ public class ConsultationSchedulePanel extends JPanel {
         selectedScheduleId = -1;
         consultationTable.clearSelection();
 
-        loadDoctorsToComboBox(); // Reload all doctors
+        cbDoctor.removeAllItems(); // Keep doctor combobox empty until date is selected
         // Don't load all rooms - keep room combobox empty until room type is selected
         cbRoom.removeAllItems();
     }

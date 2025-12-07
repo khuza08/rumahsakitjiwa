@@ -235,8 +235,8 @@ public class main extends JFrame {
         
         // Menu Items
             if ("admin".equals(userRole)) {
-                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal Dokter", "Booking Kamar", "Jadwal Konsultasi", "Manajemen Rawat Inap"};
-                String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "RESEPSIONIS", "JADWAL", "BOOKING", "KONSULTASI", "RAWATINAP"};
+                String[] menuItems = {"Dashboard", "Data Dokter", "Data Kamar", "Data Resepsionis", "Jadwal Dokter", "Laporan"};
+                String[] menuKeys = {"DASHBOARD", "DOKTER", "KAMAR", "RESEPSIONIS", "JADWAL", "LAPORAN"};
 
             for (int i = 0; i < menuItems.length; i++) {
                 final String menuKey = menuKeys[i];
