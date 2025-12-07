@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import com.toedter.calendar.JDateChooser;
+import com.github.lgooddatepicker.components.TimePicker;
 import rumahsakitjiwa.database.DatabaseConnection;
 import rumahsakitjiwa.model.ConsultationSchedule;
 import rumahsakitjiwa.controller.ConsultationScheduleController;
@@ -20,7 +21,7 @@ public class ConsultationSchedulePanel extends JPanel {
     private JTable consultationTable;
     private JTextField txtScheduleId;
     private JDateChooser dateChooser;  // For consultation date
-    private JSpinner spStartTime, spEndTime;  // Use JSpinner for time input
+    private TimePicker tpStartTime, tpEndTime;  // Use LGoodDatePicker TimePicker for time input
     private JComboBox<String> cbStatus, cbPatient, cbDoctor, cbInpatientRequired, cbRoomType, cbRoom;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear, btnCheckAvailability;
     private int selectedScheduleId = -1;
@@ -31,11 +32,13 @@ public class ConsultationSchedulePanel extends JPanel {
     private ConsultationScheduleController controller;
     private ConsultationScheduleDataAccess dataAccess;
 
-    // Utility method to format time from JSpinner
-    private String formatTimeFromSpinner(JSpinner spinner) {
-        java.util.Date time = (java.util.Date) spinner.getValue();
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm");
-        return sdf.format(time);
+    // Utility method to get time from LGoodDatePicker TimePicker
+    private String formatTimeFromTimePicker(TimePicker timePicker) {
+        java.time.LocalTime selectedTime = timePicker.getTime();
+        if (selectedTime != null) {
+            return selectedTime.toString().substring(0, 5); // Return in HH:mm format (first 5 chars of HH:mm:ss)
+        }
+        return "00:00"; // Default time if null
     }
 
     public ConsultationSchedulePanel() {
@@ -224,8 +227,8 @@ public class ConsultationSchedulePanel extends JPanel {
         cbPatient.setEnabled(isResepsionis);
         cbDoctor.setEnabled(isResepsionis);
         dateChooser.setEnabled(isResepsionis);
-        spStartTime.setEnabled(isResepsionis);
-        spEndTime.setEnabled(isResepsionis);
+        tpStartTime.setEnabled(isResepsionis);
+        tpEndTime.setEnabled(isResepsionis);
         cbRoomType.setEnabled(isResepsionis);
         cbRoom.setEnabled(isResepsionis);
         cbStatus.setEnabled(isResepsionis && "admin".equalsIgnoreCase(userRole)); // Only admin can change status
@@ -322,22 +325,16 @@ public class ConsultationSchedulePanel extends JPanel {
         // Start Time
         gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Waktu Mulai:"), gbc);
-        spStartTime = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(spStartTime, "hh:mm a");
-        spStartTime.setEditor(timeEditor);
-        spStartTime.setValue(java.util.Calendar.getInstance().getTime());
+        tpStartTime = new TimePicker(); // Default TimePicker
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(spStartTime, gbc);
+        formPanel.add(tpStartTime, gbc);
 
         // End Time
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Waktu Selesai:"), gbc);
-        spEndTime = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor timeEditor2 = new JSpinner.DateEditor(spEndTime, "hh:mm a");
-        spEndTime.setEditor(timeEditor2);
-        spEndTime.setValue(java.util.Calendar.getInstance().getTime());
+        tpEndTime = new TimePicker(); // Default TimePicker
         gbc.gridx = 1; gbc.gridwidth = 2;
-        formPanel.add(spEndTime, gbc);
+        formPanel.add(tpEndTime, gbc);
 
         // Room Type
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
@@ -583,8 +580,8 @@ public class ConsultationSchedulePanel extends JPanel {
     private void addSchedule() {
         if (!"resepsionis".equalsIgnoreCase(userRole)) return;
 
-        String startTimeStr = formatTimeFromSpinner(spStartTime);
-        String endTimeStr = formatTimeFromSpinner(spEndTime);
+        String startTimeStr = formatTimeFromTimePicker(tpStartTime);
+        String endTimeStr = formatTimeFromTimePicker(tpEndTime);
 
         if (cbPatient.getSelectedItem() == null || cbPatient.getSelectedItem().toString().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Pasien harus dipilih!");
@@ -719,8 +716,8 @@ public class ConsultationSchedulePanel extends JPanel {
             return;
         }
 
-        String startTimeStr = formatTimeFromSpinner(spStartTime);
-        String endTimeStr = formatTimeFromSpinner(spEndTime);
+        String startTimeStr = formatTimeFromTimePicker(tpStartTime);
+        String endTimeStr = formatTimeFromTimePicker(tpEndTime);
 
         if (cbPatient.getSelectedItem() == null || cbPatient.getSelectedItem().toString().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Pasien harus dipilih!");
@@ -878,9 +875,8 @@ public class ConsultationSchedulePanel extends JPanel {
         cbPatient.setSelectedIndex(-1);
         cbDoctor.setSelectedIndex(-1);
         dateChooser.setDate(null);
-        java.util.Date currentTime = new java.util.Date();
-        spStartTime.setValue(currentTime);
-        spEndTime.setValue(currentTime);
+        tpStartTime.setTime(java.time.LocalTime.now()); // Set to current time
+        tpEndTime.setTime(java.time.LocalTime.now()); // Set to current time
         cbRoomType.setSelectedIndex(-1);
         cbRoom.setSelectedIndex(-1);
         cbStatus.setSelectedItem("Scheduled");
@@ -925,15 +921,18 @@ public class ConsultationSchedulePanel extends JPanel {
             String[] times = timeStr.split(" - ");
             if (times.length == 2) {
                 try {
-                    java.text.SimpleDateFormat timeFormat = new java.text.SimpleDateFormat("HH:mm");
-                    java.util.Date startTime = timeFormat.parse(times[0]);
-                    java.util.Date endTime = timeFormat.parse(times[1]);
-                    spStartTime.setValue(startTime);
-                    spEndTime.setValue(endTime);
+                    String startTimeStr = times[0];
+                    String endTimeStr = times[1];
+                    // Convert the HH:mm string to LocalTime objects
+                    java.time.LocalTime startTime = java.time.LocalTime.parse(startTimeStr + ":00"); // Add seconds
+                    java.time.LocalTime endTime = java.time.LocalTime.parse(endTimeStr + ":00"); // Add seconds
+
+                    tpStartTime.setTime(startTime);
+                    tpEndTime.setTime(endTime);
                 } catch (Exception e) {
                     System.out.println("Error parsing time: " + e.getMessage());
-                    spStartTime.setValue(new java.util.Date());
-                    spEndTime.setValue(new java.util.Date());
+                    tpStartTime.setTime(java.time.LocalTime.now());
+                    tpEndTime.setTime(java.time.LocalTime.now());
                 }
             }
             cbStatus.setSelectedItem(tableModel.getValueAt(selectedRow, 7));
