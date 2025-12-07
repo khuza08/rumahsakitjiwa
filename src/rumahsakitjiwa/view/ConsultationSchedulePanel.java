@@ -48,7 +48,10 @@ public class ConsultationSchedulePanel extends JPanel {
         setupTable();
         loadSchedules();
         loadRoomTypes();  // Load room types after initialization
-        loadAvailableRoomsToComboBox();  // Load available rooms
+        // Don't load rooms initially - only load when room type is selected
+        cbRoomType.setSelectedIndex(-1); // Set room type to null initially
+        cbRoom.setSelectedIndex(-1);     // Set room to null initially
+
         // Don't load doctors initially - will be loaded when date is selected
 
         // Tambahkan listener untuk combobox pasien dan dokter
@@ -120,17 +123,8 @@ public class ConsultationSchedulePanel extends JPanel {
         String selectedRoomType = (String) cbRoomType.getSelectedItem();
         cbRoom.removeAllItems();
         if (selectedRoomType == null || selectedRoomType.isEmpty()) {
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                String sql = "SELECT room_number, room_type FROM rooms WHERE status = 'Tersedia' ORDER BY room_number";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                ResultSet rs = pstmt.executeQuery();
-                while (rs.next()) {
-                    String roomInfo = rs.getString("room_number") + " (" + rs.getString("room_type") + ")";
-                    cbRoom.addItem(roomInfo);
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            // When no room type is selected, keep room combobox empty
+            return;
         } else {
             try (Connection conn = DatabaseConnection.getConnection()) {
                 String sql = "SELECT room_number, room_type FROM rooms WHERE room_type = ? AND status = 'Tersedia' ORDER BY room_number";
@@ -885,7 +879,8 @@ public class ConsultationSchedulePanel extends JPanel {
         consultationTable.clearSelection();
 
         loadDoctorsToComboBox(); // Reload all doctors
-        loadAvailableRoomsToComboBox(); // Refresh daftar kamar tersedia
+        // Don't load all rooms - keep room combobox empty until room type is selected
+        cbRoom.removeAllItems();
     }
 
     private void loadSelectedSchedule() {
@@ -940,13 +935,29 @@ public class ConsultationSchedulePanel extends JPanel {
             // Set the room based on the stored room number
             String roomNumber = (String) tableModel.getValueAt(selectedRow, 8);
             if (roomNumber != null && !roomNumber.isEmpty()) {
-                // Find the room in the combobox that matches the stored room number
-                for (int i = 0; i < cbRoom.getItemCount(); i++) {
-                    String roomInfo = cbRoom.getItemAt(i);
-                    if (roomInfo.startsWith(roomNumber + " ")) {
-                        cbRoom.setSelectedItem(roomInfo);
-                        break;
+                // First, find the room type for this room number to set the room type combobox
+                try (Connection conn = DatabaseConnection.getConnection()) {
+                    String sql = "SELECT room_type FROM rooms WHERE room_number = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, roomNumber);
+                    ResultSet rs = pstmt.executeQuery();
+                    if (rs.next()) {
+                        String roomType = rs.getString("room_type");
+                        cbRoomType.setSelectedItem(roomType);
+                        // Now update rooms for this type so the specific room will be available
+                        updateRoomsForType();
+
+                        // Find the room in the combobox that matches the stored room number
+                        for (int i = 0; i < cbRoom.getItemCount(); i++) {
+                            String roomInfo = cbRoom.getItemAt(i);
+                            if (roomInfo.startsWith(roomNumber + " ")) {
+                                cbRoom.setSelectedItem(roomInfo);
+                                break;
+                            }
+                        }
                     }
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }
 
