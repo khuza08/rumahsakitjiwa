@@ -139,25 +139,50 @@ public class login extends JFrame {
         titleLabel.setForeground(new Color(0x1e3c35));
         rightPanel.add(titleLabel, gbc);
 
+        // Load icons
+        Image userIconImg = null;
+        Image lockIconImg = null;
+        try {
+            ImageIcon userIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/user.png"));
+            ImageIcon lockIcon = new ImageIcon(getClass().getResource("/rumahsakitjiwa/resource/lock.png"));
+            userIconImg = userIcon.getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+            lockIconImg = lockIcon.getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+        } catch (Exception e) {
+            System.err.println("Error loading field icons: " + e.getMessage());
+        }
+        
+        final Image finalUserIcon = userIconImg;
+        final Image finalLockIcon = lockIconImg;
+
         gbc.gridwidth = 1;
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
 
-        usernameField = new JTextField(15) {
+        JPanel usernameContainer = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(0x43786e));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
-                g2.setColor(new Color(0x6da395));
-                g2.setFont(new Font("Segoe Ui Symbol", Font.PLAIN, 16));
-                FontMetrics fm = g2.getFontMetrics();
-                int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
-                g2.drawString("👤", 15, iconY);
-                super.paintComponent(g);
+                
+                if (finalUserIcon != null) {
+                    int iconY = (getHeight() - finalUserIcon.getHeight(null)) / 2;
+                    g2.drawImage(finalUserIcon, 15, iconY, null);
+                } else {
+                    g2.setColor(new Color(0x6da395));
+                    g2.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
+                    FontMetrics fm = g2.getFontMetrics();
+                    int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
+                    g2.drawString("👤", 15, iconY);
+                }
                 g2.dispose();
             }
         };
+        usernameContainer.setOpaque(false);
+        usernameContainer.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+
+        usernameField = new JTextField(15);
         usernameField.setBorder(BorderFactory.createEmptyBorder(12, 45, 12, 15));
         usernameField.setOpaque(false);
         usernameField.setForeground(new Color(0x6da395));
@@ -166,7 +191,9 @@ public class login extends JFrame {
         usernameField.setText("Username");
         setupPlaceholder(usernameField, "Username");
         usernameField.addActionListener(e -> passwordField.requestFocus());
-        rightPanel.add(usernameField, gbc);
+        
+        usernameContainer.add(usernameField, BorderLayout.CENTER);
+        rightPanel.add(usernameContainer, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         
@@ -178,11 +205,17 @@ public class login extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(0x43786e));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 25, 25);
-                g2.setColor(new Color(0x6da395));
-                g2.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
-                FontMetrics fm = g2.getFontMetrics();
-                int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
-                g2.drawString("🔒", 15, iconY); 
+                
+                if (finalLockIcon != null) {
+                    int iconY = (getHeight() - finalLockIcon.getHeight(null)) / 2;
+                    g2.drawImage(finalLockIcon, 15, iconY, null);
+                } else {
+                    g2.setColor(new Color(0x6da395));
+                    g2.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 16));
+                    FontMetrics fm = g2.getFontMetrics();
+                    int iconY = (getHeight() + fm.getAscent()) / 2 - 2;
+                    g2.drawString("🔒", 15, iconY);
+                }
                 g2.dispose();
             }
         };
