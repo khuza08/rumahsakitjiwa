@@ -71,6 +71,10 @@ public class main extends JFrame {
         startClock();
         addUniversalDragFunctionality();
         normalBounds = getBounds();
+        
+        // Auto-maximize on startup
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        isMaximized = true;
     }
     
     private void initializeComponents() {
