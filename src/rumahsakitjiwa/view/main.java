@@ -53,11 +53,14 @@ public class main extends JFrame {
         
         setUndecorated(true);
         setTitle("Sistem Resepsionis - Rumah Sakit Jiwa");
-        setSize(1200, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
         setBackground(new Color(0, 0, 0, 0));
+        setLayout(new BorderLayout());
+
+        // Langsung maximized sejak awal (menghilangkan animasi scaling)
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        isMaximized = true;
+        normalBounds = new Rectangle(0, 0, 1200, 800); // Fallback jika di-restore
 
         try {
             userRole = login.currentUserRole;
@@ -70,11 +73,6 @@ public class main extends JFrame {
         initializeComponents();
         startClock();
         addUniversalDragFunctionality();
-        normalBounds = getBounds();
-        
-        // Auto-maximize on startup
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
-        isMaximized = true;
     }
     
     private void initializeComponents() {
@@ -85,7 +83,11 @@ public class main extends JFrame {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x6da395));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                if (isMaximized) {
+                    g2d.fillRect(0, 0, getWidth(), getHeight());
+                } else {
+                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                }
                 g2d.dispose();
             }
         };
@@ -192,8 +194,13 @@ public class main extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x43786e));
                 
-                // Buat rounded rectangle untuk sidebar dengan rounded di kiri atas dan kiri bawah
-                g2d.fillRoundRect(0, 0, getWidth() + 20, getHeight(), 20, 20);
+                if (isMaximized) {
+                    // Siku-siku saat maximized
+                    g2d.fillRect(0, 0, getWidth() + 20, getHeight());
+                } else {
+                    // Rounded saat normal windowed
+                    g2d.fillRoundRect(0, 0, getWidth() + 20, getHeight(), 20, 20);
+                }
                 
                 g2d.dispose();
             }
@@ -203,44 +210,7 @@ public class main extends JFrame {
         sidebarPanel.setOpaque(false);
         sidebarPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 20, 15));
         
-        // macOS Buttons Panel di paling atas
-        JPanel macOSPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        macOSPanel.setOpaque(false);
-        macOSPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
-        
-        JButton closeBtn = createMacOSButton(new Color(0xFF5F57));
-        JButton minimizeBtn = createMacOSButton(new Color(0xFFBD2E));
-        JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
-        
-        closeBtn.addActionListener(e -> {
-            if (clockTimer != null) clockTimer.stop();
-            dispose();
-            System.exit(0);
-        });
-        
-        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
-        
-        maximizeBtn.addActionListener(e -> {
-            if (isMaximized) {
-                setExtendedState(JFrame.NORMAL);
-                if (normalBounds != null) {
-                    setBounds(normalBounds);
-                }
-                isMaximized = false;
-            } else {
-                normalBounds = getBounds();
-                setExtendedState(JFrame.MAXIMIZED_BOTH);
-                isMaximized = true;
-            }
-            repaint();
-        });
-        
-        macOSPanel.add(closeBtn);
-        macOSPanel.add(minimizeBtn);
-        macOSPanel.add(maximizeBtn);
-        
-        sidebarPanel.add(macOSPanel);
-        sidebarPanel.add(Box.createRigidArea(new Dimension(0, 30))); // Jarak setelah macOS buttons
+        sidebarPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Top padding
         
         // Menu Items
             if ("admin".equals(userRole)) {
