@@ -113,15 +113,21 @@ public class InpatientManagementPanel extends JPanel {
 
         // Schedule ID
         gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("ID Jadwal:"), gbc);
         txtScheduleId = new JTextField(15);
         txtScheduleId.setEditable(false);
         txtScheduleId.setBackground(Color.LIGHT_GRAY);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtScheduleId, gbc);
 
         // Patient Code
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Kode Pasien:"), gbc);
         JPanel patientPanel = new JPanel(new BorderLayout(5, 0));
         txtPatientCode = new JTextField(10);
@@ -129,18 +135,26 @@ public class InpatientManagementPanel extends JPanel {
         patientPanel.add(txtPatientCode, BorderLayout.CENTER);
         patientPanel.add(btnSearchPatient, BorderLayout.EAST);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(patientPanel, gbc);
 
         // Patient Name
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Nama Pasien:"), gbc);
         txtPatientName = new JTextField(15);
         txtPatientName.setEditable(false);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtPatientName, gbc);
 
         // Doctor Code
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Kode Dokter:"), gbc);
         JPanel doctorPanel = new JPanel(new BorderLayout(5, 0));
         txtDoctorCode = new JTextField(10);
@@ -148,18 +162,26 @@ public class InpatientManagementPanel extends JPanel {
         doctorPanel.add(txtDoctorCode, BorderLayout.CENTER);
         doctorPanel.add(btnSearchDoctor, BorderLayout.EAST);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(doctorPanel, gbc);
 
         // Doctor Name
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Nama Dokter:"), gbc);
         txtDoctorName = new JTextField(15);
         txtDoctorName.setEditable(false);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtDoctorName, gbc);
 
         // Room Number
         gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("No. Kamar:"), gbc);
         JPanel roomPanel = new JPanel(new BorderLayout(5, 0));
         txtRoomNumber = new JTextField(10);
@@ -167,49 +189,75 @@ public class InpatientManagementPanel extends JPanel {
         roomPanel.add(txtRoomNumber, BorderLayout.CENTER);
         roomPanel.add(btnSearchRoom, BorderLayout.EAST);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(roomPanel, gbc);
 
         // Room Type
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         txtRoomType = new JTextField(15);
         txtRoomType.setEditable(false);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtRoomType, gbc);
 
         // Admission Date
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tanggal Masuk:"), gbc);
         txtAdmissionDate = new JTextField(15);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtAdmissionDate, gbc);
 
         // Discharge Date
         gbc.gridx = 0; gbc.gridy = 9; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tanggal Keluar:"), gbc);
         txtDischargeDate = new JTextField(15);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtDischargeDate, gbc);
 
         // Status
         gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Status:"), gbc);
         cbStatus = new JComboBox<>(new String[]{"Scheduled", "Admitted", "Discharged", "Cancelled"});
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbStatus, gbc);
 
         // Diagnosis
         gbc.gridx = 0; gbc.gridy = 11; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Diagnosis:"), gbc);
         txtDiagnosis = new JTextField(15);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtDiagnosis, gbc);
 
         // Notes
         gbc.gridx = 0; gbc.gridy = 12; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Catatan:"), gbc);
         txtNotes = new JTextField(15);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtNotes, gbc);
 
         // Buttons

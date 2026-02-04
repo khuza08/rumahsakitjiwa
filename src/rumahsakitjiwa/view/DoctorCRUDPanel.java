@@ -130,39 +130,59 @@ public class DoctorCRUDPanel extends JPanel {
 
         // ✅ Kode Dokter (ID Dokter) - disabled
         gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("ID Dokter:"), gbc);
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         txtDoctorCode = new JTextField(15);
         txtDoctorCode.setEditable(false);
         txtDoctorCode.setBackground(Color.LIGHT_GRAY);
-        gbc.gridx = 1;
         formPanel.add(txtDoctorCode, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Nama Lengkap:"), gbc);
-        txtFullName = new JTextField(15);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        txtFullName = new JTextField(15);
         formPanel.add(txtFullName, gbc);
 
         // ❌ Spesialisasi dihapus
 
         gbc.gridx = 0; gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Alamat:"), gbc);
-        txtAddress = new JTextField(15);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        txtAddress = new JTextField(15);
         formPanel.add(txtAddress, gbc);
 
         gbc.gridx = 0; gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("No. Telepon:"), gbc);
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         txtPhone = new JTextField(15);
         txtPhone.setDocument(new NumericDocument(13));
-        gbc.gridx = 1;
         formPanel.add(txtPhone, gbc);
 
         gbc.gridx = 0; gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Email:"), gbc);
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         txtEmail = new JTextField(15);
         txtEmail.setDocument(new EmailDocument()); // Terapkan custom document untuk hanya karakter valid email
-        gbc.gridx = 1;
         formPanel.add(txtEmail, gbc);
 
         // ❌ Status dihapus

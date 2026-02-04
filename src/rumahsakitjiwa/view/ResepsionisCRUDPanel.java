@@ -96,48 +96,76 @@ public class ResepsionisCRUDPanel extends JPanel {
 
         gbc.gridwidth = 1;
         gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("NIR:"), gbc);
         txtNIR = new JTextField(15);
         txtNIR.setEditable(false); // 🔒 Tidak bisa diubah manual
         txtNIR.setBackground(new Color(240, 240, 240)); // Greyed out look
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtNIR, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Nama:"), gbc);
         txtNama = new JTextField(15);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtNama, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Alamat:"), gbc);
         txtAlamat = new JTextField(15);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtAlamat, gbc);
 
         gbc.gridx = 0; gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("No. Tlp:"), gbc);
         txtNoTlp = new JTextField(15);
         txtNoTlp.setDocument(new NumericDocument(13)); // Terapkan custom document untuk hanya angka maksimal 13 digit
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtNoTlp, gbc);
 
         gbc.gridx = 0; gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Gender:"), gbc);
         cbGender = new JComboBox<>(new String[]{"Laki-laki", "Perempuan"});
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbGender, gbc);
 
         gbc.gridx = 0; gbc.gridy = 6;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Username:"), gbc);
         txtUsername = new JTextField(15);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtUsername, gbc);
 
         gbc.gridx = 0; gbc.gridy = 7;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Password:"), gbc);
         txtPassword = new JTextField(15); // Ganti JPasswordField menjadi JTextField
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtPassword, gbc);
 
         // Button Panel

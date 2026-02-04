@@ -104,18 +104,26 @@ public class RoomBookingPanel extends JPanel {
 
         // Booking ID
         gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("ID Booking:"), gbc);
         txtBookingId = new JTextField(15);
         txtBookingId.setEditable(false);
         txtBookingId.setBackground(Color.LIGHT_GRAY);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtBookingId, gbc);
 
         // Patient Selection
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Pilih Pasien:"), gbc);
         cbPatient = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbPatient, gbc);
 
         // Load patients into the combobox
@@ -124,16 +132,24 @@ public class RoomBookingPanel extends JPanel {
 
         // Room Type
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         cbRoomType = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbRoomType, gbc);
 
         // Room Selection
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Pilih Kamar:"), gbc);
         cbRoom = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbRoom, gbc);
 
         // Load available rooms into the combobox
@@ -159,6 +175,8 @@ public class RoomBookingPanel extends JPanel {
         checkInPanel.add(txtCheckInDate, BorderLayout.CENTER);
         checkInPanel.add(btnCheckInDate, BorderLayout.EAST);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(checkInPanel, gbc);
 
         // Check-out Date
@@ -174,20 +192,30 @@ public class RoomBookingPanel extends JPanel {
         checkOutPanel.add(txtCheckOutDate, BorderLayout.CENTER);
         checkOutPanel.add(btnCheckOutDate, BorderLayout.EAST);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(checkOutPanel, gbc);
 
         // Status
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Status:"), gbc);
         cbStatus = new JComboBox<>(new String[]{"Booking", "Check-in", "Check-out", "Cancelled"});
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbStatus, gbc);
 
         // Notes
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Catatan:"), gbc);
         txtNotes = new JTextField(15);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtNotes, gbc);
 
         // Buttons

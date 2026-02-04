@@ -83,6 +83,8 @@ public class RoomCRUDPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = 1;  
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         
         // 🔽 ROOM TYPE DROPDOWN — dengan listener yang benar
@@ -92,40 +94,58 @@ public class RoomCRUDPanel extends JPanel {
             loadAvailableRoomNumbers();
         });
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbRoomType, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("No. Kamar:"), gbc);
         
         cbRoomNumber = new JComboBox<>();
         cbRoomNumber.setEditable(false);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbRoomNumber, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Status:"), gbc);
         cbStatus = new JComboBox<>(new String[]{"Tersedia", "Terisi", "Maintenance"});
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbStatus, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Harga/Hari:"), gbc);
         txtPrice = new JTextField(15);
         txtPrice.setToolTipText("Contoh: 1200000, 1.200.000, 1,2jt, atau 100rb");
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtPrice, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 5;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Deskripsi:"), gbc);
         txtDescription = new JTextArea(3, 15);
         txtDescription.setLineWrap(true);
         txtDescription.setWrapStyleWord(true);
         JScrollPane scrollPane = new JScrollPane(txtDescription);
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(scrollPane, gbc);
 
         JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));

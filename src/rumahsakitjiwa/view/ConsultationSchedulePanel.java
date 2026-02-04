@@ -281,18 +281,26 @@ public class ConsultationSchedulePanel extends JPanel {
 
         // Schedule ID
         gbc.gridx = 0; gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("ID Jadwal:"), gbc);
         txtScheduleId = new JTextField(15);
         txtScheduleId.setEditable(false);
         txtScheduleId.setBackground(Color.LIGHT_GRAY);
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(txtScheduleId, gbc);
 
         // Patient Code
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Pilih Pasien:"), gbc);
         cbPatient = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbPatient, gbc);
 
         // Load patients into the combobox
@@ -300,9 +308,13 @@ public class ConsultationSchedulePanel extends JPanel {
 
         // Doctor Selection
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Pilih Dokter:"), gbc);
         cbDoctor = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbDoctor, gbc);
 
         // Don't load doctors initially - only load when date is selected
@@ -310,52 +322,80 @@ public class ConsultationSchedulePanel extends JPanel {
 
         // Consultation Date
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tanggal Konsultasi:"), gbc);
         dateChooser = new JDateChooser();
         dateChooser.setDateFormatString("yyyy-MM-dd");
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(dateChooser, gbc);
 
         // Start Time
         gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Waktu Mulai:"), gbc);
         tpStartTime = new TimePicker(); // Default TimePicker
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(tpStartTime, gbc);
 
         // End Time
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Waktu Selesai:"), gbc);
         tpEndTime = new TimePicker(); // Default TimePicker
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(tpEndTime, gbc);
 
         // Room Type
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Tipe Kamar:"), gbc);
         cbRoomType = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbRoomType, gbc);
 
         // Room Selection
         gbc.gridx = 0; gbc.gridy = 9; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Pilih Kamar:"), gbc);
         cbRoom = new JComboBox<>();
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbRoom, gbc);
 
         // Status
         gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Status:"), gbc);
         cbStatus = new JComboBox<>(new String[]{"Scheduled", "Completed", "Cancelled", "No-show"});
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbStatus, gbc);
 
         // Inpatient Required
         gbc.gridx = 0; gbc.gridy = 11; gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         formPanel.add(new JLabel("Perlu Rawat Inap:"), gbc);
         cbInpatientRequired = new JComboBox<>(new String[]{"Tidak", "Ya"});
         gbc.gridx = 1; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
         formPanel.add(cbInpatientRequired, gbc);
 
         // No inpatient details panel - removed as requested
