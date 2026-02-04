@@ -39,6 +39,9 @@ public class main extends JFrame {
     private String userRole;
     private String userName;
     
+    // For smooth dragging throttling
+    private long lastDragTime = 0;
+    
     public main() {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
@@ -74,6 +77,7 @@ public class main extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x6da395));
@@ -179,6 +183,7 @@ public class main extends JFrame {
         JPanel sidebarPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x43786e));
@@ -357,6 +362,7 @@ public class main extends JFrame {
         JButton button = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
@@ -449,8 +455,15 @@ public class main extends JFrame {
         this.addMouseMotionListener(new MouseMotionAdapter() {
             public void mouseDragged(MouseEvent e) {
                 if (!isMaximized) {
-                    Point currentPoint = e.getLocationOnScreen();
-                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastDragTime > 10) { // ~100 FPS
+                        Point currentPoint = e.getLocationOnScreen();
+                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                        revalidate();
+                        repaint();
+                        java.awt.Toolkit.getDefaultToolkit().sync();
+                        lastDragTime = currentTime;
+                    }
                 }
             }
         });
@@ -468,8 +481,15 @@ public class main extends JFrame {
             comp.addMouseMotionListener(new MouseMotionAdapter() {
                 public void mouseDragged(MouseEvent e) {
                     if (!isMaximized) {
-                        Point currentPoint = e.getLocationOnScreen();
-                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastDragTime > 10) { // ~100 FPS
+                            Point currentPoint = e.getLocationOnScreen();
+                            setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                            revalidate();
+                            repaint();
+                            java.awt.Toolkit.getDefaultToolkit().sync();
+                            lastDragTime = currentTime;
+                        }
                     }
                 }
             });

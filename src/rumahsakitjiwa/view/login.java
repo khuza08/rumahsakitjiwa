@@ -24,6 +24,9 @@ public class login extends JFrame {
     public static String currentUserRole = "";
     public static String currentUsername = "";
     public static String currentFullName = "";
+    
+    // For smooth dragging throttling
+    private long lastDragTime = 0;
 
     public login() {
         try {
@@ -48,12 +51,15 @@ public class login extends JFrame {
         splitPane.setDividerLocation(250);
         splitPane.setDividerSize(0);
         splitPane.setOpaque(false);
+        getContentPane().setBackground(new Color(0, 0, 0, 1)); // Alpha 1 to stabilize compositor
+        ((JComponent)getContentPane()).setOpaque(false);
         add(splitPane, BorderLayout.CENTER);
 
         // ================= PANEL KIRI (Logo) =================
         JPanel leftPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x1e3c35));
@@ -75,8 +81,13 @@ public class login extends JFrame {
         JButton maximizeBtn = createMacOSButton(new Color(0x28CA42));
         
         closeBtn.addActionListener(e -> { dispose(); System.exit(0); });
-        minimizeBtn.addActionListener(e -> setState(JFrame.ICONIFIED));
-        maximizeBtn.addActionListener(e -> toggleMaximize());
+        
+        minimizeBtn.setEnabled(false);
+        maximizeBtn.setEnabled(false);
+        // Action listeners for minimize/maximize are not needed when disabled,
+        // but we'll leave them or empty them to be safe.
+        minimizeBtn.addActionListener(e -> { if(minimizeBtn.isEnabled()) setState(JFrame.ICONIFIED); });
+        maximizeBtn.addActionListener(e -> { if(maximizeBtn.isEnabled()) toggleMaximize(); });
 
         macOSButtons.add(closeBtn);
         macOSButtons.add(minimizeBtn);
@@ -107,6 +118,7 @@ public class login extends JFrame {
         JPanel rightPanel = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(0x6da395));
@@ -161,6 +173,7 @@ public class login extends JFrame {
         JPanel passwordContainer = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(0x43786e));
@@ -445,53 +458,31 @@ public class login extends JFrame {
     }
 
     private void addUniversalDragFunctionality() {
-        this.addMouseListener(new MouseAdapter() {
-            public void mousePressed(MouseEvent e) {
-                mousePoint = e.getPoint();
-            }
-        });
-        this.addMouseMotionListener(new MouseMotionAdapter() {
-            public void mouseDragged(MouseEvent e) {
-                if (!isMaximized) {
-                    Point currentPoint = e.getLocationOnScreen();
-                    setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
-                }
-            }
-        });
-        addDragToAllComponents(this);
+        // Disabled to prevent flickering/smearing effects on Linux
     }
 
     private void addDragToAllComponents(Container container) {
-        for (Component comp : container.getComponents()) {
-            if (comp instanceof JButton) continue;
-            comp.addMouseListener(new MouseAdapter() {
-                public void mousePressed(MouseEvent e) {
-                    mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), login.this);
-                }
-            });
-            comp.addMouseMotionListener(new MouseMotionAdapter() {
-                public void mouseDragged(MouseEvent e) {
-                    if (!isMaximized) {
-                        Point currentPoint = e.getLocationOnScreen();
-                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
-                    }
-                }
-            });
-            if (comp instanceof Container) {
-                addDragToAllComponents((Container) comp);
-            }
-        }
+        // Disabled to prevent flickering/smearing effects on Linux
     }
 
     private JButton createMacOSButton(Color color) {
         JButton button = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(color);
+                
+                if (isEnabled()) {
+                    g2d.setColor(color);
+                } else {
+                    // Greyed out / Desaturated look
+                    g2d.setColor(new Color(150, 150, 150, 180));
+                }
+                
                 g2d.fillOval(0, 0, getWidth(), getHeight());
-                if (getModel().isRollover()) {
+                
+                if (isEnabled() && getModel().isRollover()) {
                     g2d.setColor(new Color(0, 0, 0, 150));
                     g2d.setStroke(new BasicStroke(1.2f));
                     int centerX = getWidth() / 2;
@@ -521,15 +512,19 @@ public class login extends JFrame {
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                button.setPreferredSize(new Dimension(15, 15));
-                button.revalidate();
-                button.repaint();
+                if (button.isEnabled()) {
+                    button.setPreferredSize(new Dimension(15, 15));
+                    button.revalidate();
+                    button.repaint();
+                }
             }
             @Override
             public void mouseExited(MouseEvent e) {
-                button.setPreferredSize(new Dimension(14, 14));
-                button.revalidate();
-                button.repaint();
+                if (button.isEnabled()) {
+                    button.setPreferredSize(new Dimension(14, 14));
+                    button.revalidate();
+                    button.repaint();
+                }
             }
         });
         return button;

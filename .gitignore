@@ -1,3 +1,6 @@
 # ignore
 build/
 .DS_store
+bin/
+*.class
+.class
