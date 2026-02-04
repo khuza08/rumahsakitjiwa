@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.sql.*;
+import java.awt.geom.RoundRectangle2D;
 
 public class login extends JFrame {
     public JTextField usernameField;
@@ -51,8 +52,9 @@ public class login extends JFrame {
         splitPane.setDividerLocation(250);
         splitPane.setDividerSize(0);
         splitPane.setOpaque(false);
-        getContentPane().setBackground(new Color(0, 0, 0, 1)); // Alpha 1 to stabilize compositor
+        getContentPane().setBackground(new Color(0, 0, 0, 0)); // True transparency
         ((JComponent)getContentPane()).setOpaque(false);
+        getRootPane().setOpaque(false);
         add(splitPane, BorderLayout.CENTER);
 
         // ================= PANEL KIRI (Logo) =================
@@ -491,11 +493,56 @@ public class login extends JFrame {
     }
 
     private void addUniversalDragFunctionality() {
-        // Disabled to prevent flickering/smearing effects on Linux
+        this.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                mousePoint = e.getPoint();
+            }
+        });
+        this.addMouseMotionListener(new MouseMotionAdapter() {
+            public void mouseDragged(MouseEvent e) {
+                if (!isMaximized) {
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastDragTime > 10) { // ~100 FPS
+                        Point currentPoint = e.getLocationOnScreen();
+                        setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                        revalidate();
+                        repaint();
+                        java.awt.Toolkit.getDefaultToolkit().sync();
+                        lastDragTime = currentTime;
+                    }
+                }
+            }
+        });
+        addDragToAllComponents(this);
     }
 
     private void addDragToAllComponents(Container container) {
-        // Disabled to prevent flickering/smearing effects on Linux
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JButton || comp instanceof JTextField || comp instanceof JPasswordField) continue;
+            comp.addMouseListener(new MouseAdapter() {
+                public void mousePressed(MouseEvent e) {
+                    mousePoint = SwingUtilities.convertPoint(comp, e.getPoint(), login.this);
+                }
+            });
+            comp.addMouseMotionListener(new MouseMotionAdapter() {
+                public void mouseDragged(MouseEvent e) {
+                    if (!isMaximized) {
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastDragTime > 10) { // ~100 FPS
+                            Point currentPoint = e.getLocationOnScreen();
+                            setLocation(currentPoint.x - mousePoint.x, currentPoint.y - mousePoint.y);
+                            revalidate();
+                            repaint();
+                            java.awt.Toolkit.getDefaultToolkit().sync();
+                            lastDragTime = currentTime;
+                        }
+                    }
+                }
+            });
+            if (comp instanceof Container) {
+                addDragToAllComponents((Container) comp);
+            }
+        }
     }
 
     private JButton createMacOSButton(Color color) {

@@ -19,8 +19,14 @@ javac -cp ".:$LIBS" -d "$BIN_DIR" src/rumahsakitjiwa/*.java src/rumahsakitjiwa/*
 if [ $? -eq 0 ]; then
     echo "Kompilasi berhasil."
     echo "Menjalankan aplikasi..."
-    # 3. Jalankan aplikasi
-    java -Dsun.java2d.opengl=true -Dsun.java2d.xrender=true -Dsun.java2d.pmoffscreen=false -Dsun.java2d.noddraw=true -cp "$BIN_DIR:$LIBS" --enable-native-access=ALL-UNNAMED "$MAIN_CLASS"
+    # 3. Jalankan aplikasi dengan flag stabilitas grafis Linux dan akselerasi OpenGL
+    java -Dsun.java2d.pmoffscreen=false \
+         -Dsun.java2d.noddraw=true \
+         -Dsun.java2d.opengl=true \
+         -Dsun.java2d.xrender=true \
+         -cp "$BIN_DIR:$LIBS" \
+         --enable-native-access=ALL-UNNAMED \
+         "$MAIN_CLASS"
 else
     echo "Kompilasi GAGAL. Harap periksa error di atas."
     exit 1
